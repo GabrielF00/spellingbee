@@ -1,12 +1,13 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import './index.css';
-import App from './App';
+import './tictactoe.css';
 import * as serviceWorker from './serviceWorker';
+import {HexGrid} from "./hex";
 
 ReactDOM.render(
   <React.StrictMode>
-    <App />
+      <HexGrid />
+    {/*<Game />*/}
   </React.StrictMode>,
   document.getElementById('root')
 );
