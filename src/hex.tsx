@@ -1,10 +1,11 @@
 import React, {ChangeEvent, FormEvent} from 'react';
 import './hexgrid.css';
 
-interface InputProps {}
-interface InputState {
-    toSubmit: string
+interface InputProps {
+    wordInProgress: string,
+    fieldUpdater: any
 }
+interface InputState {}
 
 class Input extends React.Component<InputProps, InputState> {
     constructor(props: InputProps) {
@@ -12,23 +13,21 @@ class Input extends React.Component<InputProps, InputState> {
         this.handleChange = this.handleChange.bind(this);
         this.handleSubmit = this.handleSubmit.bind(this);
     }
-    state: InputState = {
-        toSubmit: ''
-    }
 
     handleChange(event: ChangeEvent<HTMLInputElement>) {
-        this.setState({toSubmit: event.target.value});
+        this.props.fieldUpdater(event.target.value);
     }
 
     handleSubmit(event: FormEvent<HTMLFormElement>) {
-        alert('A name was submitted: ' + this.state.toSubmit);
+        alert('A name was submitted: ' + this.props.wordInProgress);
         event.preventDefault();
     }
 
     render() {
         return (
             <form onSubmit={this.handleSubmit}>
-                <input type="text" value={this.state.toSubmit} onChange={this.handleChange} />
+                <input type="text" value={this.props.wordInProgress}
+                       onChange={this.handleChange} />
                 <input type="submit" value="Submit" />
             </form>
         );
@@ -37,13 +36,14 @@ class Input extends React.Component<InputProps, InputState> {
 
 interface HexTileProps {
     letter: String,
-    listKey: number
+    listKey: number,
+    tileOnClick: any
 }
 
 function HexTile(props: HexTileProps) {
     return (
         <li key={props.listKey.toString() + "key"}>
-            <div className="hexagon">
+            <div className="hexagon" onClick={() => props.tileOnClick(props.letter)}>
                 <h1 className="letter">{props.letter}</h1>
             </div>
         </li>
@@ -52,24 +52,48 @@ function HexTile(props: HexTileProps) {
 
 interface ControlsProps {
     shuffleButtonOnClick: any
+    deleteButtonOnClick: any
 }
 
 function Controls(props: ControlsProps) {
    return (
-       <button onClick={() => props.shuffleButtonOnClick()}>Shuffle</button>
+       <div>
+           <button onClick={props.shuffleButtonOnClick}>Shuffle</button>
+           <button onClick={props.deleteButtonOnClick}>Delete</button>
+       </div>
    )
 }
 
 interface HexGridProps {}
 interface HexGridState {
     letters: string,
-    centerLetter: string
+    centerLetter: string,
+    wordInProgress: string
 }
 
 export class HexGrid extends React.Component<HexGridProps, HexGridState> {
     state: HexGridState = {
         letters: "BCDEFG",
-        centerLetter: "A"
+        centerLetter: "A",
+        wordInProgress: ""
+    }
+
+    handleTileClick(letter: string) {
+        this.setState({
+            wordInProgress: this.state.wordInProgress + letter
+        })
+    }
+
+    handleUpdateToInputField(newText: string) {
+        this.setState({
+            wordInProgress: newText.toUpperCase()
+        })
+    }
+
+    delete() {
+        this.setState({
+            wordInProgress: this.state.wordInProgress.substring(0, this.state.wordInProgress.length - 1)
+        })
     }
 
     shuffle() {
@@ -83,19 +107,24 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
     render() {
         let tiles: Array<JSX.Element> = [];
         for (let i: number = 0; i < 3 ; i++) {
-            tiles.push(<HexTile letter={this.state.letters.charAt(i)} listKey={i}/>);
+            tiles.push(<HexTile letter={this.state.letters.charAt(i)} listKey={i}
+                                tileOnClick={(letter: string) => this.handleTileClick(letter)}/>);
         }
-        tiles.push(<HexTile letter={this.state.centerLetter} listKey={3}/>);
+        tiles.push(<HexTile letter={this.state.centerLetter} listKey={3}
+                            tileOnClick={(letter: string) => this.handleTileClick(letter)}/>);
         for (let i: number = 3; i <  6; i++) {
-            tiles.push(<HexTile letter={this.state.letters.charAt(i)} listKey={i+1}/>);
+            tiles.push(<HexTile letter={this.state.letters.charAt(i)} listKey={i+1}
+                                tileOnClick={(letter: string) => this.handleTileClick(letter)}/>);
         }
         return (
             <div>
-                <Input />
+                <Input wordInProgress={this.state.wordInProgress}
+                       fieldUpdater={(newText: string) => this.handleUpdateToInputField(newText)}/>
                 <ul id="grid" className="clear">
                     {tiles}
                 </ul>
-                <Controls shuffleButtonOnClick={() => this.shuffle()}/>
+                <Controls shuffleButtonOnClick={() => this.shuffle()}
+                          deleteButtonOnClick={() => this.delete()}/>
             </div>
         );
     }
