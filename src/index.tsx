@@ -6,7 +6,7 @@ import {HexGrid} from "./hex";
 
 ReactDOM.render(
   <React.StrictMode>
-      <HexGrid />
+      <HexGrid letters="BCDEFG" centerLetter="A"/>
     {/*<Game />*/}
   </React.StrictMode>,
   document.getElementById('root')
