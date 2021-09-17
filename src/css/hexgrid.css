@@ -2,11 +2,29 @@
  * Hex grid adapted from https://www.codesmite.com/article/how-to-create-pure-css-hexagonal-grids
  */
 
+.wrapper {
+    max-width: 960px;
+    margin: 2em auto;
+}
+
+@media screen and (min-width: 600px) {
+    .gridCol {
+        width: 31.24999999%;
+        float: left;
+    }
+
+    .wordsCol {
+        width: 64.58333331%;
+        float: right;
+        border: 1px gray;
+    }
+}
+
 #grid {
     position: relative;
-    width: 30%;
+    width: 80%;
     margin: 0;
-    padding: 0;
+    padding: 10%;
 }
 
 .clear:after {
@@ -50,6 +68,9 @@
 
 h1.letter {
     text-transform: capitalize;
+    font-weight: 700;
+    font-size: 1.5em;
+    font-family: Helvetica Arial sans-serif;
 }
 
 #wordInProgress {

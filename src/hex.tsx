@@ -81,7 +81,9 @@ interface HexGridState {
     wordInProgress: string,
     validLetters: Set<string>,
     errorMessage: string,
-    foundWords: string[]
+    foundWords: string[],
+    score: number,
+    rank: string
 }
 
 export class HexGrid extends React.Component<HexGridProps, HexGridState> {
@@ -90,7 +92,9 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
         validLetters: this.createSetOfValidLetters(this.props.letters),
         wordInProgress: "",
         errorMessage: "",
-        foundWords: []
+        foundWords: [],
+        score: 0,
+        rank: "EGG"
     }
 
     createSetOfValidLetters(letters: string) {
@@ -130,7 +134,9 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
                 this.setState({
                     wordInProgress: "",
                     errorMessage: "" + data.response.score + " Points!",
-                    foundWords: data.response.game.found_words
+                    foundWords: data.response.game_state.found_words,
+                    score: data.response.game_state.score,
+                    rank: data.response.game_state.rank
                 });
                 break;
             case "failed":
@@ -174,17 +180,23 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
             foundWordsDisp.push(<p key={this.state.foundWords[i]}>{this.state.foundWords[i]}</p>)
         }
         return (
-            <div>
-                <Input wordInProgress={this.state.wordInProgress}
-                       fieldUpdater={(newText: string) => this.handleUpdateToInputField(newText)}
-                       formSubmitter={() => this.handleEnterButton()}
-                       errorMessage={this.state.errorMessage}/>
-                <ul id="grid" className="clear">
-                    {tiles}
-                </ul>
-                <Controls shuffleButtonOnClick={() => this.shuffle()}
-                          deleteButtonOnClick={() => this.delete()}/>
-                {foundWordsDisp}
+            <div className="wrapper">
+                <div className="gridCol">
+                    <p>{this.state.score}</p>
+                    <p>{this.state.rank}</p>
+                    <Input wordInProgress={this.state.wordInProgress}
+                           fieldUpdater={(newText: string) => this.handleUpdateToInputField(newText)}
+                           formSubmitter={() => this.handleEnterButton()}
+                           errorMessage={this.state.errorMessage}/>
+                    <ul id="grid" className="clear">
+                        {tiles}
+                    </ul>
+                    <Controls shuffleButtonOnClick={() => this.shuffle()}
+                              deleteButtonOnClick={() => this.delete()}/>
+                </div>
+                <div className="wordsCol">
+                    {foundWordsDisp}
+                </div>
             </div>
         );
     }
