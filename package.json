@@ -10,12 +10,15 @@
     "@types/node": "^12.12.39",
     "@types/react": "^16.9.35",
     "@types/react-dom": "^16.9.8",
+    "@types/spellbee": "git+ssh://git@github.com/GabrielF00/spelling_bee_models.git",
+    "axios": "^0.21.4",
     "react": "^16.13.1",
     "react-dom": "^16.13.1",
     "react-scripts": "3.4.1",
     "typescript": "^3.7.5"
   },
   "scripts": {
+    "update:packages": "npm install git+ssh://git@github.com/GabrielF00/spelling_bee_models.git",
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",

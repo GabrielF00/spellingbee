@@ -49,6 +49,11 @@
 }
 
 h1.letter {
+    text-transform: capitalize;
+}
+
+#wordInProgress {
+    text-transform: uppercase;
 }
 
 #grid li:nth-child(4) .hexagon {

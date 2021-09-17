@@ -1,5 +1,7 @@
 import React, {ChangeEvent, FormEvent} from 'react';
-import './hexgrid.css';
+import './css/hexgrid.css';
+import {SubmitWordResponse} from "spellbee";
+import SpellBeeService from "./data_service";
 
 const WORD_TOO_SHORT = "Words must be at least 4 letters."
 
@@ -32,7 +34,7 @@ class Input extends React.Component<InputProps, InputState> {
             <div>
                 <form onSubmit={this.handleSubmit}>
                     <input type="text" value={this.props.wordInProgress}
-                           onChange={this.handleChange} />
+                           onChange={this.handleChange} id={"wordInProgress"} />
                     <input type="submit" value="Submit" />
                 </form>
                 <div id="errorMessage">{this.props.errorMessage}</div>
@@ -43,13 +45,12 @@ class Input extends React.Component<InputProps, InputState> {
 
 interface HexTileProps {
     letter: String,
-    listKey: number,
     tileOnClick: any
 }
 
 function HexTile(props: HexTileProps) {
     return (
-        <li key={props.listKey.toString() + "key"}>
+        <li>
             <div className="hexagon" onClick={() => props.tileOnClick(props.letter)}>
                 <h1 className="letter">{props.letter}</h1>
             </div>
@@ -79,7 +80,8 @@ interface HexGridState {
     letters: string,
     wordInProgress: string,
     validLetters: Set<string>,
-    errorMessage: string
+    errorMessage: string,
+    foundWords: string[]
 }
 
 export class HexGrid extends React.Component<HexGridProps, HexGridState> {
@@ -87,7 +89,8 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
         letters: this.props.letters,
         validLetters: this.createSetOfValidLetters(this.props.letters),
         wordInProgress: "",
-        errorMessage: ""
+        errorMessage: "",
+        foundWords: []
     }
 
     createSetOfValidLetters(letters: string) {
@@ -102,7 +105,7 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
     }
 
     handleUpdateToInputField(newText: string) {
-        const toAdd: string = newText.toUpperCase()
+        const toAdd: string = newText
             .split('')
             .filter(l => this.state.validLetters.has(l))
             .join('');
@@ -112,14 +115,31 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
         })
     }
 
-    handleEnterButton() {
+    async handleEnterButton() {
         if (this.state.wordInProgress.length < 4) {
             this.setState({
                 errorMessage: WORD_TOO_SHORT
             });
             return;
         }
-        alert(this.state.wordInProgress);
+        let data: SubmitWordResponse = await SpellBeeService.submitWord({
+            word: this.state.wordInProgress
+        });
+        switch(data.state) {
+            case "success":
+                this.setState({
+                    wordInProgress: "",
+                    errorMessage: "" + data.response.score + " Points!",
+                    foundWords: data.response.game.found_words
+                });
+                break;
+            case "failed":
+                this.setState({
+                    wordInProgress: "",
+                    errorMessage: data.error_message
+                });
+                break;
+        }
     }
 
     delete() {
@@ -139,14 +159,19 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
     render() {
         const tiles: Array<JSX.Element> = [];
         for (let i: number = 0; i < 3 ; i++) {
-            tiles.push(<HexTile letter={this.state.letters.charAt(i)} listKey={i}
+            tiles.push(<HexTile key={i} letter={this.state.letters.charAt(i)}
                                 tileOnClick={(letter: string) => this.handleTileClick(letter)}/>);
         }
-        tiles.push(<HexTile letter={this.props.centerLetter} listKey={3}
+        tiles.push(<HexTile key={3} letter={this.props.centerLetter}
                             tileOnClick={(letter: string) => this.handleTileClick(letter)}/>);
         for (let i: number = 3; i <  6; i++) {
-            tiles.push(<HexTile letter={this.state.letters.charAt(i)} listKey={i+1}
+            tiles.push(<HexTile key={i+1} letter={this.state.letters.charAt(i)}
                                 tileOnClick={(letter: string) => this.handleTileClick(letter)}/>);
+        }
+
+        const foundWordsDisp: Array<JSX.Element> = [];
+        for (let i in this.state.foundWords.sort()) {
+            foundWordsDisp.push(<p key={this.state.foundWords[i]}>{this.state.foundWords[i]}</p>)
         }
         return (
             <div>
@@ -159,6 +184,7 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
                 </ul>
                 <Controls shuffleButtonOnClick={() => this.shuffle()}
                           deleteButtonOnClick={() => this.delete()}/>
+                {foundWordsDisp}
             </div>
         );
     }
