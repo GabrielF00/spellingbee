@@ -39,7 +39,7 @@ class Input extends React.Component<InputProps, InputState> {
                            onChange={this.handleChange} className="uppercase w-5/6 font-bold" />
                     <input type="submit" className="btn-gold" value="GO!" />
                 </form>
-                <div id="errorMessage">{this.props.errorMessage}</div>
+                <div id="errorMessage" className="h-4">&nbsp;{this.props.errorMessage}</div>
             </div>
         );
     }
@@ -153,7 +153,8 @@ interface HexGridState {
     foundWordsVisible: boolean,
     score: number,
     rank: string,
-    splashScreenVisible: boolean
+    splashScreenVisible: boolean,
+    ranks: Record<string, number>
 }
 
 export class HexGrid extends React.Component<HexGridProps, HexGridState> {
@@ -168,7 +169,8 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
         foundWordsVisible: false,
         score: 0,
         rank: "EGG",
-        splashScreenVisible: true
+        splashScreenVisible: true,
+        ranks: {}
     }
 
     async startGame() {
@@ -181,7 +183,8 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
             splashScreenVisible: false,
             foundWords: data.found_words,
             score: data.score,
-            rank: data.rank
+            rank: data.current_rank,
+            ranks: data.ranks
         });
     }
 
@@ -225,7 +228,7 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
                     errorMessage: "" + data.response.score + " Points!",
                     foundWords: data.response.game_state.found_words,
                     score: data.response.game_state.score,
-                    rank: data.response.game_state.rank
+                    rank: data.response.game_state.current_rank
                 });
                 break;
             case "failed":
@@ -257,6 +260,23 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
         });
     }
 
+    getPointsToGeniusOrQueen() {
+        const geniusScore = this.state.ranks["GENIUS"];
+        const queenScore = this.state.ranks["QUEEN"];
+
+        let pointsLeft: number;
+        let nextRank: string;
+        if (this.state.score >= geniusScore) {
+            pointsLeft = queenScore - this.state.score;
+            nextRank = "queen";
+        }
+        else {
+            pointsLeft = geniusScore - this.state.score;
+            nextRank = "genius";
+        }
+        return `${pointsLeft} point${pointsLeft === 1 ? "" : "s"} to ${nextRank}`
+    }
+
     render() {
         const tiles: Array<JSX.Element> = [];
         for (let i: number = 0; i < 3 ; i++) {
@@ -272,7 +292,7 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
 
         return (
             <div>
-                <div className="max-w-md m-2">
+                <div className="max-w-md mt-2 mx-auto px-2">
                     <div className="flex w-full">
                         <div className="bg-gray-700 text-white font-bold py-2 px-4">
                             <p className="score_box text-center">{this.state.score}</p>
@@ -281,7 +301,7 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
                             <p>{this.state.rank}</p>
                         </div>
                         <div className="py-2 px-4 flex-grow text-right text-gray-500">
-                            <p>99 points to genius</p>
+                            <p>{this.getPointsToGeniusOrQueen()}</p>
                         </div>
                     </div>
                     <button className="w-full bg-gray-500 text-white mt-2 py-2 px-4" onClick={() => this.showHideFoundWords()}>
@@ -291,14 +311,14 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
                         </div>
                     </button>
                 </div>
-                <div className="relative max-w-md m-2">
+                <div className="relative max-w-md mt-2 mx-auto px-2">
                     <FoundWords foundWords={this.state.foundWords} foundWordsVisible={this.state.foundWordsVisible} />
                     <Input wordInProgress={this.state.wordInProgress}
                            fieldUpdater={(newText: string) => this.handleUpdateToInputField(newText)}
                            formSubmitter={() => this.handleEnterButton()}
                            errorMessage={this.state.errorMessage}
                     />
-                    <div className="mt-2 mb-2">
+                    <div className="mt-4 mb-2">
                         <ul id="grid" className="clear">
                             {tiles}
                         </ul>
