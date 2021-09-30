@@ -2,35 +2,18 @@
  * Hex grid adapted from https://www.codesmite.com/article/how-to-create-pure-css-hexagonal-grids
  */
 
-.wrapper {
-    max-width: 960px;
-    margin: 2em auto;
-}
-
-@media screen and (min-width: 600px) {
-    .gridCol {
-        width: 31.24999999%;
-        float: left;
-    }
-
-    .wordsCol {
-        width: 64.58333331%;
-        float: right;
-        border: 1px gray;
-    }
-}
-
-#grid {
-    position: relative;
-    width: 80%;
-    margin: 0;
-    padding: 10%;
-}
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 .clear:after {
     content: "";
     display: block;
     clear: both;
+}
+
+#grid {
+    padding-left: 11%;
 }
 
 #grid li {
@@ -64,17 +47,6 @@
     display: flex;
     align-items: center;
     justify-content: center;
-}
-
-h1.letter {
-    text-transform: capitalize;
-    font-weight: 700;
-    font-size: 1.5em;
-    font-family: Helvetica Arial sans-serif;
-}
-
-#wordInProgress {
-    text-transform: uppercase;
 }
 
 #grid li:nth-child(4) .hexagon {
@@ -113,4 +85,30 @@ h1.letter {
 
 #grid li:nth-child(1), #grid li:nth-child(6) {
     margin-left: 0.5%;
+}
+
+.btn-gray {
+     @apply bg-gray-500 text-white font-bold py-2 px-4 rounded m-2;
+ }
+.btn-gray:hover {
+    @apply bg-gray-700;
+}
+
+.btn-gold {
+    @apply bg-yellow-600 text-white font-bold py-2 px-4 rounded m-2;
+}
+.btn-gray:hover {
+    @apply bg-yellow-700;
+}
+
+.gold-caret {
+    caret-color: #ffca38;
+}
+
+.col-count-2 {
+    column-count: 2;
+}
+
+.score_box {
+    width: 3ch;
 }

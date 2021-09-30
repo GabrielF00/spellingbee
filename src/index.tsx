@@ -4,8 +4,7 @@ import {HexGrid} from "./hex";
 
 ReactDOM.render(
   <React.StrictMode>
-      <HexGrid letters="ecpoml" centerLetter="t"/>
-    {/*<Game />*/}
+      <HexGrid />
   </React.StrictMode>,
   document.getElementById('root')
 );
