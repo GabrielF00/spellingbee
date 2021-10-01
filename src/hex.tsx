@@ -306,7 +306,7 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
                     </div>
                     <button className="w-full bg-gray-500 text-white mt-2 py-2 px-4" onClick={() => this.showHideFoundWords()}>
                         <div className="grid grid-cols-2">
-                            <div className="col-start-1 place-self-start">Found words </div>
+                            <div className="col-start-1 place-self-start">{`${this.state.foundWords.length} words found`}</div>
                             <div className="col-start-2 place-self-end"><FoundWordsButtonIcon foundWordsVisible={this.state.foundWordsVisible}/></div>
                         </div>
                     </button>
