@@ -229,7 +229,7 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
             case "success":
                 this.setState({
                     wordInProgress: "",
-                    errorMessage: `${data.response.score} Point${pluralize(data.response.score)}!`,
+                    errorMessage: `${data.response.is_pangram ? "Pangram! - " : ""} ${data.response.score} Point${pluralize(data.response.score)}!`,
                     foundWords: data.response.game_state.found_words,
                     score: data.response.game_state.score,
                     rank: data.response.game_state.current_rank
