@@ -157,6 +157,10 @@ interface HexGridState {
     ranks: Record<string, number>
 }
 
+function pluralize(pointsLeft: number) {
+    return pointsLeft === 1 ? "" : "s";
+}
+
 export class HexGrid extends React.Component<HexGridProps, HexGridState> {
     state: HexGridState = {
         gameId: -1,
@@ -225,7 +229,7 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
             case "success":
                 this.setState({
                     wordInProgress: "",
-                    errorMessage: "" + data.response.score + " Points!",
+                    errorMessage: `${data.response.score} Point${pluralize(data.response.score)}!`,
                     foundWords: data.response.game_state.found_words,
                     score: data.response.game_state.score,
                     rank: data.response.game_state.current_rank
@@ -274,7 +278,7 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
             pointsLeft = geniusScore - this.state.score;
             nextRank = "genius";
         }
-        return `${pointsLeft} point${pointsLeft === 1 ? "" : "s"} to ${nextRank}`
+        return `${pointsLeft} point${pluralize(pointsLeft)} to ${nextRank}`
     }
 
     render() {
@@ -306,7 +310,9 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
                     </div>
                     <button className="w-full bg-gray-500 text-white mt-2 py-2 px-4" onClick={() => this.showHideFoundWords()}>
                         <div className="grid grid-cols-2">
-                            <div className="col-start-1 place-self-start">{`${this.state.foundWords.length} words found`}</div>
+                            <div className="col-start-1 place-self-start">
+                                {`${this.state.foundWords.length} word${pluralize(this.state.foundWords.length)} found`}
+                            </div>
                             <div className="col-start-2 place-self-end"><FoundWordsButtonIcon foundWordsVisible={this.state.foundWordsVisible}/></div>
                         </div>
                     </button>
