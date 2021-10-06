@@ -1,8 +1,8 @@
 import React, {ChangeEvent, FormEvent} from 'react';
 import './css/hexgrid.css';
-import {GameState, SubmitWordResponse} from "spellbee";
+import {GameWord, GameState, SubmitWordResponse, EndGameState} from "spellbee";
 import SpellBeeService from "./data_service";
-import {ChevronUpIcon, ChevronDownIcon} from "@heroicons/react/solid";
+import {ChevronUpIcon, ChevronDownIcon, CheckIcon} from "@heroicons/react/solid";
 
 const WORD_TOO_SHORT = "Words must be at least 4 letters."
 
@@ -92,15 +92,21 @@ function FoundWordsButtonIcon(props: FoundWordsButtonIconProps) {
 }
 
 interface FoundWordsProps {
-    foundWords: string[],
+    foundWords: GameWord[],
     foundWordsVisible: boolean
 }
 
 function FoundWords(props: FoundWordsProps) {
     const displayClass = props.foundWordsVisible ? "block" : "hidden";
     const foundWordsDisp: Array<JSX.Element> = [];
-    for (let i in props.foundWords.sort()) {
-        foundWordsDisp.push(<li key={props.foundWords[i]}>{props.foundWords[i]}</li>)
+    for (let i of props.foundWords.sort((a, b) => a.word.localeCompare(b.word))) {
+        foundWordsDisp.push(
+            <li key={i.word}>
+                <p className={i.is_pangram ? "underline font-bold" : ""}>
+                    {i.word}
+                </p>
+            </li>
+        )
     }
     return (
         <div className={"absolute z-40 bg-white w-full h-full border-2 overscroll-auto overflow-auto " + displayClass}>
@@ -119,7 +125,7 @@ interface SplashScreenProps {
 function SplashScreen(props: SplashScreenProps) {
     const displayClass = props.splashScreenVisible ? "" : "hidden";
     return (
-        <div className={"fixed z-50 pin overflow-auto bg-gray-600 flex top-0 bottom-0 w-full h-screen place-content-center place-items-center " + displayClass}>
+        <div className={"fixed z-40 pin overflow-auto bg-gray-600 flex top-0 bottom-0 w-full h-screen place-content-center place-items-center " + displayClass}>
             <div className="fixed shadow-inner max-w-md m-auto p-8 bg-white md:rounded w-full md:shadow flex flex-col">
                 <h2 className="text-4xl text-center font-hairline md:leading-loose text-grey md:mt-8 mb-4">Bee Genius</h2>
                 <button className="btn-gray" onClick={props.newSingleGameOnClickHandler}>
@@ -139,6 +145,56 @@ function SplashScreen(props: SplashScreenProps) {
     )
 }
 
+interface EndGameScreenProps {
+    endGameScreenVisible: boolean,
+    foundWords: GameWord[],
+    allWords: GameWord[],
+    score: number,
+    maxScore: number,
+    rank: string,
+    closeButtonHandler: any
+}
+
+function EndGameScreen(props: EndGameScreenProps) {
+    const displayClass = props.endGameScreenVisible ? "block" : "hidden";
+    const foundWordsSet = new Set(props.foundWords.map(word => word.word));
+    const wordsDisp: Array<JSX.Element> = [];
+
+    for (let i of props.allWords.sort((a, b) => a.word.localeCompare(b.word))) {
+        console.log("i: " + i.word);
+        console.log("found words set: " + Array.from(foundWordsSet).join(' '));
+        console.log("in set: " + foundWordsSet.has(i.word));
+        wordsDisp.push(
+            <li key={i.word}>
+                <span className={i.is_pangram ? "underline font-bold" : ""}>
+                    {i.word}
+                </span>
+                {foundWordsSet.has(i.word) && <CheckIcon className={"h-5 w-5 text-yellow-500 inline"} />}
+            </li>
+        )
+    }
+
+    return (
+        <div className={"fixed z-50 pin overflow-auto bg-white flex top-0 bottom-0 w-full h-screen place-content-center place-items-center " + displayClass}>
+            <div className="border-2 w-full h-full space-y-2 flex flex-col">
+                <h2 className="text-4xl text-center font-hairline md:leading-loose text-grey my-4">Game Over</h2>
+                <p className="text-2xl text-center">Score: {props.score + " / " + props.maxScore}</p>
+                <p className="text-2xl text-center">{props.rank}</p>
+                <div className={"flex-1 overflow-auto overscroll-auto my-2"}>
+                    <ul className="list-disc list-inside p-2 col-count-2">
+                        {wordsDisp}
+                    </ul>
+                </div>
+                <div className="mx-auto my-2">
+                <button className="btn-gray" onClick={props.closeButtonHandler}>
+                    New Game
+                </button>
+                </div>
+            </div>
+        </div>
+    )
+}
+
 interface HexGridProps {
 }
 
@@ -149,8 +205,10 @@ interface HexGridState {
     wordInProgress: string,
     validLetters: Set<string>,
     errorMessage: string,
-    foundWords: string[],
+    foundWords: GameWord[],
+    allWords: GameWord[],
     foundWordsVisible: boolean,
+    endGameScreenVisible: boolean,
     score: number,
     rank: string,
     splashScreenVisible: boolean,
@@ -170,7 +228,9 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
         wordInProgress: "",
         errorMessage: "",
         foundWords: [],
+        allWords: [],
         foundWordsVisible: false,
+        endGameScreenVisible: false,
         score: 0,
         rank: "EGG",
         splashScreenVisible: true,
@@ -185,7 +245,9 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
             centerLetter: data.middle_letter,
             validLetters: this.createSetOfValidLetters(data.outer_letters, data.middle_letter),
             splashScreenVisible: false,
+            endGameScreenVisible: false,
             foundWords: data.found_words,
+            allWords: [],
             score: data.score,
             rank: data.current_rank,
             ranks: data.ranks
@@ -244,6 +306,17 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
         }
     }
 
+    async endGame() {
+        let endGameState: EndGameState = await SpellBeeService.endGame({
+            gameId: this.state.gameId
+        });
+        console.log(endGameState);
+        this.setState({
+            endGameScreenVisible: true,
+            allWords: endGameState.response.all_words
+        });
+    }
+
     delete() {
         this.setState({
             wordInProgress: this.state.wordInProgress.substring(0, this.state.wordInProgress.length - 1)
@@ -281,6 +354,13 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
         return `${pointsLeft} point${pluralize(pointsLeft)} to ${nextRank}`
     }
 
+    closeEndGameScreen() {
+        this.setState({
+            endGameScreenVisible: false,
+            splashScreenVisible: true
+        });
+    }
+
     render() {
         const tiles: Array<JSX.Element> = [];
         for (let i: number = 0; i < 3 ; i++) {
@@ -302,10 +382,10 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
                             <p className="score_box text-center">{this.state.score}</p>
                         </div>
                         <div className="py-2 px-4">
-                            <p>{this.state.rank}</p>
+                            <span className={"text-sm"}>{this.state.rank}</span>
                         </div>
-                        <div className="py-2 px-4 flex-grow text-right text-gray-500">
-                            <p>{this.getPointsToGeniusOrQueen()}</p>
+                        <div className="py-2 flex-grow text-right text-gray-500">
+                            <span className="text-sm align-middle">{this.getPointsToGeniusOrQueen()}</span>
                         </div>
                     </div>
                     <button className="w-full bg-gray-500 text-white mt-2 py-2 px-4" onClick={() => this.showHideFoundWords()}>
@@ -331,9 +411,15 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
                     </div>
                     <Controls shuffleButtonOnClick={() => this.shuffle()}
                               deleteButtonOnClick={() => this.delete()}/>
+                    <button className="w-full bg-gray-500 text-white mt-2 py-2 px-4" onClick={() => this.endGame()}>
+                        End game and show answers
+                    </button>
                 </div>
                 <SplashScreen splashScreenVisible={this.state.splashScreenVisible}
                               newSingleGameOnClickHandler={() => this.startGame()}/>
+                <EndGameScreen endGameScreenVisible={this.state.endGameScreenVisible} foundWords={this.state.foundWords}
+                               score={this.state.score} maxScore={this.state.ranks["QUEEN"]} rank={this.state.rank}
+                               allWords={this.state.allWords} closeButtonHandler={() => this.closeEndGameScreen()}/>
             </div>
         );
     }
