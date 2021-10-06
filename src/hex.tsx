@@ -125,7 +125,7 @@ interface SplashScreenProps {
 function SplashScreen(props: SplashScreenProps) {
     const displayClass = props.splashScreenVisible ? "" : "hidden";
     return (
-        <div className={"fixed z-40 pin overflow-auto bg-gray-600 flex top-0 bottom-0 w-full h-screen place-content-center place-items-center " + displayClass}>
+        <div className={"fixed z-40 pin overflow-auto bg-gray-600 flex top-0 bottom-0 left-0 w-full h-screen place-content-center place-items-center " + displayClass}>
             <div className="fixed shadow-inner max-w-md m-auto p-8 bg-white md:rounded w-full md:shadow flex flex-col">
                 <h2 className="text-4xl text-center font-hairline md:leading-loose text-grey md:mt-8 mb-4">Bee Genius</h2>
                 <button className="btn-gray" onClick={props.newSingleGameOnClickHandler}>
@@ -156,7 +156,7 @@ interface EndGameScreenProps {
 }
 
 function EndGameScreen(props: EndGameScreenProps) {
-    const displayClass = props.endGameScreenVisible ? "block" : "hidden";
+    const displayClass = props.endGameScreenVisible ? "" : "hidden";
     const foundWordsSet = new Set(props.foundWords.map(word => word.word));
     const wordsDisp: Array<JSX.Element> = [];
 
@@ -175,8 +175,8 @@ function EndGameScreen(props: EndGameScreenProps) {
     }
 
     return (
-        <div className={"fixed z-50 pin overflow-auto bg-white flex top-0 bottom-0 w-full h-screen place-content-center place-items-center " + displayClass}>
-            <div className="border-2 w-full h-full space-y-2 flex flex-col">
+        <div className={"absolute z-40 top-0 bg-white w-full h-full overscroll-auto overflow-auto " + displayClass}>
+            <div className="w-full h-full space-y-2 flex flex-col">
                 <h2 className="text-4xl text-center font-hairline md:leading-loose text-grey my-4">Game Over</h2>
                 <p className="text-2xl text-center">Score: {props.score + " / " + props.maxScore}</p>
                 <p className="text-2xl text-center">{props.rank}</p>
@@ -375,7 +375,7 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
         }
 
         return (
-            <div>
+            <div className="relative max-w-md mt-2 mx-auto">
                 <div className="max-w-md mt-2 mx-auto px-2">
                     <div className="flex w-full">
                         <div className="bg-gray-700 text-white font-bold py-2 px-4">
