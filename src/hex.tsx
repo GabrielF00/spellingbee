@@ -411,9 +411,11 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
                     </div>
                     <Controls shuffleButtonOnClick={() => this.shuffle()}
                               deleteButtonOnClick={() => this.delete()}/>
-                    <button className="w-full bg-gray-500 text-white mt-2 py-2 px-4" onClick={() => this.endGame()}>
-                        End game and show answers
-                    </button>
+                    <div className="mx-auto flex justify-content-center">
+                        <button className="btn-gray flex-1" onClick={() => this.endGame()}>
+                            End game and show answers
+                        </button>
+                    </div>
                 </div>
                 <SplashScreen splashScreenVisible={this.state.splashScreenVisible}
                               newSingleGameOnClickHandler={() => this.startGame()}/>
