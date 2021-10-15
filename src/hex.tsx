@@ -1,10 +1,29 @@
 import React, {ChangeEvent, FormEvent} from 'react';
 import './css/hexgrid.css';
-import {GameWord, GameState, SubmitWordResponse, EndGameState} from "spellbee";
 import SpellBeeService from "./data_service";
-import {ChevronUpIcon, ChevronDownIcon, CheckIcon} from "@heroicons/react/solid";
+import {CheckIcon, ChevronDownIcon, ChevronUpIcon} from "@heroicons/react/solid";
+import {
+    EndGameState,
+    GameState,
+    GameType,
+    GameWord,
+    SubmitWordResponse,
+    StartGameRequest
+} from "spellbee";
 
 const WORD_TOO_SHORT = "Words must be at least 4 letters."
+
+export const SINGLE_PLAYER = 0;
+export const COMPETITIVE = 1;
+export const COOP = 2;
+
+class ScoreBox extends React.Component<{ score: number }> {
+    render() {
+        return <div className="bg-gray-700 text-white font-bold py-2 px-4">
+            <p className="score_box text-center">{this.props.score}</p>
+        </div>;
+    }
+}
 
 interface InputProps {
     wordInProgress: string,
@@ -74,12 +93,12 @@ function Controls(props: ControlsProps) {
    )
 }
 
-interface FoundWordsButtonIconProps {
-    foundWordsVisible: boolean
+interface ChevronButtonIconProps {
+    contentVisible: boolean
 }
 
-function FoundWordsButtonIcon(props: FoundWordsButtonIconProps) {
-    if (props.foundWordsVisible) {
+function ChevronButtonIcon(props: ChevronButtonIconProps) {
+    if (props.contentVisible) {
         return (
             <ChevronUpIcon className={"h-5 w-5"}/>
         )
@@ -88,7 +107,6 @@ function FoundWordsButtonIcon(props: FoundWordsButtonIconProps) {
             <ChevronDownIcon className={"h-5 w-5"}/>
         )
     }
-
 }
 
 interface FoundWordsProps {
@@ -119,30 +137,77 @@ function FoundWords(props: FoundWordsProps) {
 
 interface SplashScreenProps {
     splashScreenVisible: boolean,
-    newSingleGameOnClickHandler: any
+    newGameClickHandler: any,
+    joinGameClickHandler: any
 }
 
-function SplashScreen(props: SplashScreenProps) {
-    const displayClass = props.splashScreenVisible ? "" : "hidden";
-    return (
-        <div className={"fixed z-40 pin overflow-auto bg-gray-600 flex top-0 bottom-0 left-0 w-full h-screen place-content-center place-items-center " + displayClass}>
-            <div className="fixed shadow-inner max-w-md m-auto p-8 bg-white md:rounded w-full md:shadow flex flex-col">
-                <h2 className="text-4xl text-center font-hairline md:leading-loose text-grey md:mt-8 mb-4">Bee Genius</h2>
-                <button className="btn-gray" onClick={props.newSingleGameOnClickHandler}>
-                    New Single Player Game
-                </button>
-                <button className="btn-gray">
-                    Join Existing Game
-                </button>
-                <button className="btn-gray">
-                    New Cooperative Game
-                </button>
-                <button className="btn-gray">
-                    New Competitive Game
-                </button>
+interface SplashScreenState {
+    joinGameFormVisible: boolean,
+    newCoopGameFormVisible: boolean,
+    newCompetitiveGameFormVisible: boolean
+}
+
+class SplashScreen extends React.Component<SplashScreenProps, SplashScreenState> {
+
+    constructor(props: SplashScreenProps) {
+        super(props);
+        this.handleNewCoopGameSubmit = this.handleNewCoopGameSubmit.bind(this);
+    }
+
+    state = {
+        joinGameFormVisible: false,
+        newCoopGameFormVisible: false,
+        newCompetitiveGameFormVisible: false
+    }
+
+    handleJoinGameButtonPush() {
+        this.setState({
+            joinGameFormVisible: !this.state.joinGameFormVisible
+        });
+    }
+
+    handleNewCoopGameButtonPush() {
+        this.setState({
+            newCoopGameFormVisible: !this.state.newCoopGameFormVisible
+        });
+    }
+
+    handleNewCompetitiveGameButtonPush() {
+        this.setState({
+            newCompetitiveGameFormVisible: !this.state.newCompetitiveGameFormVisible
+        });
+    }
+
+    handleNewCoopGameSubmit(playerName: string) {
+        this.props.newGameClickHandler(COOP, playerName);
+    }
+
+    render() {
+        const displayClass = this.props.splashScreenVisible ? "" : "hidden";
+        return (
+            <div
+                className={"fixed z-40 pin overflow-auto bg-gray-600 flex top-0 bottom-0 left-0 w-full h-screen place-content-center place-items-center " + displayClass}>
+                <div
+                    className="fixed shadow-inner max-w-md m-auto p-8 bg-white md:rounded w-full md:shadow flex flex-col">
+                    <h2 className="text-4xl text-center font-hairline md:leading-loose text-grey md:mt-8 mb-4">Bee
+                        Genius</h2>
+                    <button className="btn-gray" onClick={() => this.props.newGameClickHandler(0, "")}>
+                        New Single Player Game
+                    </button>
+                    <hr/>
+                    <ExpandingButton onClick={() => this.handleJoinGameButtonPush()} contentVisible={this.state.joinGameFormVisible}
+                                     buttonText={"Join Existing Game"}/>
+                    <HiddenForm placeHolderText={"Game code"} handleSubmit={() => {}} isVisible={this.state.joinGameFormVisible}/>
+                    <ExpandingButton onClick={() => this.handleNewCoopGameButtonPush()} contentVisible={this.state.newCoopGameFormVisible}
+                                     buttonText={"New Cooperative Game"}/>
+                    <HiddenForm placeHolderText={"Player name"} handleSubmit={this.handleNewCoopGameSubmit} isVisible={this.state.newCoopGameFormVisible}/>
+                    <ExpandingButton onClick={() => this.handleNewCompetitiveGameButtonPush()} contentVisible={this.state.newCompetitiveGameFormVisible}
+                                     buttonText={"New Competitive Game"}/>
+                    <HiddenForm placeHolderText={"Player name"} handleSubmit={this.props.newGameClickHandler} isVisible={this.state.newCompetitiveGameFormVisible}/>
+                </div>
             </div>
-        </div>
-    )
+        )
+    }
 }
 
 interface EndGameScreenProps {
@@ -161,9 +226,6 @@ function EndGameScreen(props: EndGameScreenProps) {
     const wordsDisp: Array<JSX.Element> = [];
 
     for (let i of props.allWords.sort((a, b) => a.word.localeCompare(b.word))) {
-        console.log("i: " + i.word);
-        console.log("found words set: " + Array.from(foundWordsSet).join(' '));
-        console.log("in set: " + foundWordsSet.has(i.word));
         wordsDisp.push(
             <li key={i.word}>
                 <span className={i.is_pangram ? "underline font-bold" : ""}>
@@ -195,11 +257,73 @@ function EndGameScreen(props: EndGameScreenProps) {
     )
 }
 
+class ExpandingButton extends React.Component<{ onClick: () => void, contentVisible: boolean, buttonText: string }> {
+    render() {
+        return <button className="w-full bg-gray-500 text-white mt-2 py-2 px-4"
+                       onClick={this.props.onClick}>
+            <div className="grid grid-cols-6">
+                <div className="col-start-1 col-span-5 place-self-start">
+                    {this.props.buttonText}
+                </div>
+                <div className="col-start-6 place-self-end"><ChevronButtonIcon
+                    contentVisible={this.props.contentVisible}/></div>
+            </div>
+        </button>;
+    }
+}
+
+interface HiddenFormProps {
+    placeHolderText: string,
+    handleSubmit: any,
+    isVisible: boolean
+}
+
+interface HiddenFormState {
+    value: string
+}
+
+class HiddenForm extends React.Component<HiddenFormProps, HiddenFormState> {
+    constructor(props: HiddenFormProps) {
+        super(props);
+        this.handleChange = this.handleChange.bind(this);
+        this.submit = this.submit.bind(this);
+    }
+
+    state = {
+        value: ''
+    }
+
+    handleChange(event: ChangeEvent<HTMLInputElement>) {
+        this.setState({value: event.target.value});
+    }
+
+    submit(event: FormEvent<HTMLFormElement>) {
+        this.props.handleSubmit(this.state.value);
+        event.preventDefault();
+    }
+
+    render() {
+        const displayClass = this.props.isVisible ? "block" : "hidden";
+        return <div className={displayClass}>
+            <form className="flex" onSubmit={this.submit}>
+                <input type="text"
+                       value={this.state.value}
+                       placeholder={this.props.placeHolderText}
+                       onChange={this.handleChange}
+                       className="uppercase w-5/6 font-bold pl-2 ml-2" />
+                <input type="submit" className="btn-gold" value="GO!" />
+            </form>
+        </div>
+    }
+}
+
 interface HexGridProps {
 }
 
 interface HexGridState {
     gameId: number,
+    gameType: number,
+    playerName: string
     outerLetters: string,
     centerLetter: string,
     wordInProgress: string,
@@ -220,8 +344,16 @@ function pluralize(pointsLeft: number) {
 }
 
 export class HexGrid extends React.Component<HexGridProps, HexGridState> {
+
+    constructor(props: HexTileProps) {
+        super(props);
+        this.startGame = this.startGame.bind(this);
+    }
+
     state: HexGridState = {
         gameId: -1,
+        gameType: -1,
+        playerName: "",
         outerLetters: "",
         centerLetter: "",
         validLetters: new Set<string>(),
@@ -237,18 +369,31 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
         ranks: {}
     }
 
-    async startGame() {
-        let data: GameState = await SpellBeeService.createGame();
+    async startGame(gameType: GameType, playerName: string) {
+
+        let request: StartGameRequest;
+        switch (gameType) {
+            case SINGLE_PLAYER:
+                request = {game_type: SINGLE_PLAYER}
+                break;
+            case COMPETITIVE:
+            case COOP:
+                request = {game_type: gameType, player_name: playerName}
+                break;
+        }
+
+        let data: GameState = await SpellBeeService.createGame(request);
         this.setState({
             gameId: data.id,
             outerLetters: data.outer_letters,
             centerLetter: data.middle_letter,
+            playerName: playerName,
             validLetters: this.createSetOfValidLetters(data.outer_letters, data.middle_letter),
             splashScreenVisible: false,
             endGameScreenVisible: false,
             foundWords: data.found_words,
             allWords: [],
-            score: data.score,
+            score: data.scores[playerName],
             rank: data.current_rank,
             ranks: data.ranks
         });
@@ -285,6 +430,7 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
         }
         let data: SubmitWordResponse = await SpellBeeService.submitWord({
             gameId: this.state.gameId,
+            player_name: this.state.playerName,
             word: this.state.wordInProgress
         });
         switch(data.state) {
@@ -293,7 +439,7 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
                     wordInProgress: "",
                     errorMessage: `${data.response.is_pangram ? "Pangram! - " : ""} ${data.response.score} Point${pluralize(data.response.score)}!`,
                     foundWords: data.response.game_state.found_words,
-                    score: data.response.game_state.score,
+                    score: data.response.game_state.scores[this.state.playerName],
                     rank: data.response.game_state.current_rank
                 });
                 break;
@@ -378,9 +524,7 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
             <div className="relative max-w-md mt-2 mx-auto">
                 <div className="max-w-md mt-2 mx-auto px-2">
                     <div className="flex w-full">
-                        <div className="bg-gray-700 text-white font-bold py-2 px-4">
-                            <p className="score_box text-center">{this.state.score}</p>
-                        </div>
+                        <ScoreBox score={this.state.score}/>
                         <div className="py-2 px-4">
                             <span className={"text-sm"}>{this.state.rank}</span>
                         </div>
@@ -388,17 +532,11 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
                             <span className="text-sm align-middle">{this.getPointsToGeniusOrQueen()}</span>
                         </div>
                     </div>
-                    <button className="w-full bg-gray-500 text-white mt-2 py-2 px-4" onClick={() => this.showHideFoundWords()}>
-                        <div className="grid grid-cols-2">
-                            <div className="col-start-1 place-self-start">
-                                {`${this.state.foundWords.length} word${pluralize(this.state.foundWords.length)} found`}
-                            </div>
-                            <div className="col-start-2 place-self-end"><FoundWordsButtonIcon foundWordsVisible={this.state.foundWordsVisible}/></div>
-                        </div>
-                    </button>
+                    <ExpandingButton onClick={() => this.showHideFoundWords()} contentVisible={this.state.foundWordsVisible}
+                                     buttonText={`${this.state.foundWords.length} word${pluralize(this.state.foundWords.length)} found`}/>
                 </div>
                 <div className="relative max-w-md mt-2 mx-auto px-2">
-                    <FoundWords foundWords={this.state.foundWords} foundWordsVisible={this.state.foundWordsVisible} />
+                    <FoundWords foundWords={this.state.foundWords} foundWordsVisible={this.state.foundWordsVisible}/>
                     <Input wordInProgress={this.state.wordInProgress}
                            fieldUpdater={(newText: string) => this.handleUpdateToInputField(newText)}
                            formSubmitter={() => this.handleEnterButton()}
@@ -418,7 +556,7 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
                     </div>
                 </div>
                 <SplashScreen splashScreenVisible={this.state.splashScreenVisible}
-                              newSingleGameOnClickHandler={() => this.startGame()}/>
+                              newGameClickHandler={this.startGame} joinGameClickHandler={() => {}}/>
                 <EndGameScreen endGameScreenVisible={this.state.endGameScreenVisible} foundWords={this.state.foundWords}
                                score={this.state.score} maxScore={this.state.ranks["QUEEN"]} rank={this.state.rank}
                                allWords={this.state.allWords} closeButtonHandler={() => this.closeEndGameScreen()}/>

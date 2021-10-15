@@ -1,20 +1,19 @@
 import http from "./http-common";
-import {EndGameState, GameState, SubmitWordResponse} from "spellbee";
+import {
+    EndGameRequest,
+    EndGameState,
+    GameState,
+    StartGameRequest,
+    SubmitWordRequest,
+    SubmitWordResponse
+} from "spellbee";
 import {AxiosResponse} from "axios";
 
-export interface SubmitWordRequest {
-    gameId: number,
-    word: string
-}
-
-export interface EndGameRequest {
-    gameId: number
-}
 
 class SpellBeeService {
 
-    async createGame(): Promise<GameState> {
-        return await http.post<unknown, AxiosResponse<GameState>>("/createGame").then(response => response.data);
+    async createGame(data: StartGameRequest): Promise<GameState> {
+        return await http.post<unknown, AxiosResponse<GameState>>("/createGame", data).then(response => response.data);
     }
 
     async submitWord(data: SubmitWordRequest): Promise<SubmitWordResponse> {
