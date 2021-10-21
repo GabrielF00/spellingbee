@@ -8,7 +8,7 @@ import {
     GameType,
     GameWord,
     SubmitWordResponse,
-    StartGameRequest
+    StartGameRequest, JoinGameRequest, JoinGameResponse
 } from "spellbee";
 
 const WORD_TOO_SHORT = "Words must be at least 4 letters."
@@ -17,11 +17,15 @@ export const SINGLE_PLAYER = 0;
 export const COMPETITIVE = 1;
 export const COOP = 2;
 
-class ScoreBox extends React.Component<{ score: number }> {
+class ScoreBox extends React.Component<{ score: number, caption: string, hide_caption: boolean }> {
     render() {
-        return <div className="bg-gray-700 text-white font-bold py-2 px-4">
-            <p className="score_box text-center">{this.props.score}</p>
-        </div>;
+        const captionBox = this.props.hide_caption ? null : <p className="text-xs text-center">{this.props.caption}</p>;
+        return <div>
+            <div className="bg-gray-700 text-white font-bold py-2 px-4">
+                <p className="score_box text-center">{this.props.score}</p>
+            </div>
+            {captionBox}
+        </div>
     }
 }
 
@@ -197,7 +201,7 @@ class SplashScreen extends React.Component<SplashScreenProps, SplashScreenState>
                     <hr/>
                     <ExpandingButton onClick={() => this.handleJoinGameButtonPush()} contentVisible={this.state.joinGameFormVisible}
                                      buttonText={"Join Existing Game"}/>
-                    <HiddenForm placeHolderText={"Game code"} handleSubmit={() => {}} isVisible={this.state.joinGameFormVisible}/>
+                    <JoinGameForm placeHolderText={"Player Name"} handleSubmit={this.props.joinGameClickHandler} isVisible={this.state.joinGameFormVisible}/>
                     <ExpandingButton onClick={() => this.handleNewCoopGameButtonPush()} contentVisible={this.state.newCoopGameFormVisible}
                                      buttonText={"New Cooperative Game"}/>
                     <HiddenForm placeHolderText={"Player name"} handleSubmit={this.handleNewCoopGameSubmit} isVisible={this.state.newCoopGameFormVisible}/>
@@ -317,6 +321,58 @@ class HiddenForm extends React.Component<HiddenFormProps, HiddenFormState> {
     }
 }
 
+interface JoinGameFormState {
+    gameCode: string,
+    playerName: string
+}
+
+class JoinGameForm extends React.Component<HiddenFormProps, JoinGameFormState> {
+    constructor(props: HiddenFormProps) {
+        super(props);
+        this.handleGameCodeChange = this.handleGameCodeChange.bind(this);
+        this.handlePlayerNameChange = this.handlePlayerNameChange.bind(this);
+        this.submit = this.submit.bind(this);
+    }
+
+    state = {
+        gameCode: '',
+        playerName: ''
+    }
+
+    handleGameCodeChange(event: ChangeEvent<HTMLInputElement>) {
+        this.setState({gameCode: event.target.value});
+    }
+
+    handlePlayerNameChange(event: ChangeEvent<HTMLInputElement>) {
+        this.setState({playerName: event.target.value});
+    }
+
+    submit(event: FormEvent<HTMLFormElement>) {
+        this.props.handleSubmit(this.state.playerName, this.state.gameCode);
+        event.preventDefault();
+    }
+
+    render() {
+        const displayClass = this.props.isVisible ? "block" : "hidden";
+        return <div className={displayClass}>
+            <form className="" onSubmit={this.submit}>
+                <input type="text"
+                       value={this.state.gameCode}
+                       placeholder={"Game Code"}
+                       onChange={this.handleGameCodeChange} className="uppercase font-bold w-full m-2 pl-2 py-2.5 my-2 clear-both block"/>
+                <div className="flex">
+                    <input type="text"
+                           value={this.state.playerName}
+                           placeholder={this.props.placeHolderText}
+                           onChange={this.handlePlayerNameChange}
+                           className="uppercase w-5/6 font-bold pl-2 ml-2" />
+                    <input type="submit" className="btn-gold" value="GO!" />
+                </div>
+            </form>
+        </div>
+    }
+}
+
 interface HexGridProps {
 }
 
@@ -333,7 +389,8 @@ interface HexGridState {
     allWords: GameWord[],
     foundWordsVisible: boolean,
     endGameScreenVisible: boolean,
-    score: number,
+    playerScore: number,
+    teamScore: number,
     rank: string,
     splashScreenVisible: boolean,
     ranks: Record<string, number>
@@ -348,6 +405,7 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
     constructor(props: HexTileProps) {
         super(props);
         this.startGame = this.startGame.bind(this);
+        this.joinGame = this.joinGame.bind(this);
     }
 
     state: HexGridState = {
@@ -363,7 +421,8 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
         allWords: [],
         foundWordsVisible: false,
         endGameScreenVisible: false,
-        score: 0,
+        playerScore: 0,
+        teamScore: 0,
         rank: "EGG",
         splashScreenVisible: true,
         ranks: {}
@@ -383,6 +442,23 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
         }
 
         let data: GameState = await SpellBeeService.createGame(request);
+        this.setStateFromServer(data, playerName);
+    }
+
+    async joinGame(playerName: string, gameCode: string) {
+        let request: JoinGameRequest = {player_name: playerName, game_id: gameCode};
+        let response: JoinGameResponse = await SpellBeeService.joinGame(request);
+        switch(response.state) {
+            case "success":
+                this.setStateFromServer(response.response.game_state, playerName);
+                break;
+            case "failed":
+                console.log(response.error_message);
+                break;
+        }
+    }
+
+    private setStateFromServer(data: GameState, playerName: string) {
         this.setState({
             gameId: data.id,
             outerLetters: data.outer_letters,
@@ -393,9 +469,11 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
             endGameScreenVisible: false,
             foundWords: data.found_words,
             allWords: [],
-            score: data.scores[playerName],
+            teamScore: data.team_score,
+            playerScore: data.scores[playerName],
             rank: data.current_rank,
-            ranks: data.ranks
+            ranks: data.ranks,
+            gameType: data.game_type
         });
     }
 
@@ -437,9 +515,10 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
             case "success":
                 this.setState({
                     wordInProgress: "",
-                    errorMessage: `${data.response.is_pangram ? "Pangram! - " : ""} ${data.response.score} Point${pluralize(data.response.score)}!`,
+                    errorMessage: `${data.response.is_pangram ? "Pangram! - " : ""} ${data.response.word_score} Point${pluralize(data.response.word_score)}!`,
                     foundWords: data.response.game_state.found_words,
-                    score: data.response.game_state.scores[this.state.playerName],
+                    playerScore: data.response.game_state.scores[this.state.playerName],
+                    teamScore: data.response.game_state.team_score,
                     rank: data.response.game_state.current_rank
                 });
                 break;
@@ -489,12 +568,12 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
 
         let pointsLeft: number;
         let nextRank: string;
-        if (this.state.score >= geniusScore) {
-            pointsLeft = queenScore - this.state.score;
+        if (this.state.teamScore >= geniusScore) {
+            pointsLeft = queenScore - this.state.teamScore;
             nextRank = "queen";
         }
         else {
-            pointsLeft = geniusScore - this.state.score;
+            pointsLeft = geniusScore - this.state.teamScore;
             nextRank = "genius";
         }
         return `${pointsLeft} point${pluralize(pointsLeft)} to ${nextRank}`
@@ -520,16 +599,18 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
                                 tileOnClick={(letter: string) => this.handleTileClick(letter)}/>);
         }
 
+        const teamScoreBox = this.state.gameType === SINGLE_PLAYER
+            ? <div className="py-2 px-4"><span className={"text-sm"}>{this.state.rank}</span></div>
+            : <div className="px-2"><ScoreBox score={this.state.teamScore} caption={"Team"} hide_caption={false}/></div>
+
         return (
             <div className="relative max-w-md mt-2 mx-auto">
                 <div className="max-w-md mt-2 mx-auto px-2">
                     <div className="flex w-full">
-                        <ScoreBox score={this.state.score}/>
-                        <div className="py-2 px-4">
-                            <span className={"text-sm"}>{this.state.rank}</span>
-                        </div>
+                        <ScoreBox score={this.state.playerScore} caption={"You"} hide_caption={this.state.gameType === SINGLE_PLAYER}/>
+                        {teamScoreBox}
                         <div className="py-2 flex-grow text-right text-gray-500">
-                            <span className="text-sm align-middle">{this.getPointsToGeniusOrQueen()}</span>
+                            <span className="text-sm align-baseline inline">{this.getPointsToGeniusOrQueen()}</span>
                         </div>
                     </div>
                     <ExpandingButton onClick={() => this.showHideFoundWords()} contentVisible={this.state.foundWordsVisible}
@@ -556,9 +637,9 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
                     </div>
                 </div>
                 <SplashScreen splashScreenVisible={this.state.splashScreenVisible}
-                              newGameClickHandler={this.startGame} joinGameClickHandler={() => {}}/>
+                              newGameClickHandler={this.startGame} joinGameClickHandler={this.joinGame}/>
                 <EndGameScreen endGameScreenVisible={this.state.endGameScreenVisible} foundWords={this.state.foundWords}
-                               score={this.state.score} maxScore={this.state.ranks["QUEEN"]} rank={this.state.rank}
+                               score={this.state.teamScore} maxScore={this.state.ranks["QUEEN"]} rank={this.state.rank}
                                allWords={this.state.allWords} closeButtonHandler={() => this.closeEndGameScreen()}/>
             </div>
         );

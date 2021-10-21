@@ -2,7 +2,7 @@ import http from "./http-common";
 import {
     EndGameRequest,
     EndGameState,
-    GameState,
+    GameState, JoinGameRequest, JoinGameResponse,
     StartGameRequest,
     SubmitWordRequest,
     SubmitWordResponse
@@ -13,7 +13,11 @@ import {AxiosResponse} from "axios";
 class SpellBeeService {
 
     async createGame(data: StartGameRequest): Promise<GameState> {
-        return await http.post<unknown, AxiosResponse<GameState>>("/createGame", data).then(response => response.data);
+        return await http.post<StartGameRequest, AxiosResponse<GameState>>("/createGame", data).then(response => response.data);
+    }
+
+    async joinGame(data: JoinGameRequest): Promise<JoinGameResponse> {
+        return await http.post<JoinGameRequest, AxiosResponse<JoinGameResponse>>('/joinGame', data).then(response => response.data);
     }
 
     async submitWord(data: SubmitWordRequest): Promise<SubmitWordResponse> {
