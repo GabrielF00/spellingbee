@@ -8,7 +8,7 @@ import {
     GameType,
     GameWord,
     SubmitWordResponse,
-    StartGameRequest, JoinGameRequest, JoinGameResponse
+    StartGameRequest, JoinGameRequest, JoinGameResponse, MPGameWord
 } from "spellbee";
 
 const WORD_TOO_SHORT = "Words must be at least 4 letters."
@@ -113,31 +113,62 @@ function ChevronButtonIcon(props: ChevronButtonIconProps) {
     }
 }
 
-interface FoundWordsProps {
-    foundWords: GameWord[],
-    foundWordsVisible: boolean
+interface FoundWordsListProps {
+    foundWords: MPGameWord[],
+    foundWordsVisible: boolean,
+    scores: Record<string, number>,
+    isMultiplayer: boolean
 }
 
-function FoundWords(props: FoundWordsProps) {
+function FoundWordsList(props: FoundWordsListProps) {
     const displayClass = props.foundWordsVisible ? "block" : "hidden";
+
+    const validPlayerColors = ["bg-red-500", "bg-blue-500", "bg-yellow-500", "bg-green-300"];
+    const players = Object.keys(props.scores);
+    const playerColorMap: {[index: string]: string} = {};
+    for (let i in players) {
+        playerColorMap[players[i]] = validPlayerColors[i];
+    }
+
     const foundWordsDisp: Array<JSX.Element> = [];
     for (let i of props.foundWords.sort((a, b) => a.word.localeCompare(b.word))) {
         foundWordsDisp.push(
-            <li key={i.word}>
-                <p className={i.is_pangram ? "underline font-bold" : ""}>
-                    {i.word}
-                </p>
-            </li>
+            <FoundWord key={i.word} i={i} playerColor={playerColorMap[i.player]} isMultiplayer={props.isMultiplayer}/>
         )
+    }
+    const playersDisp: Array<JSX.Element> = [];
+    if (props.isMultiplayer) {
+        for (let i of players) {
+            playersDisp.push(<div className="">
+                <div className={"rounded-full h-2 w-2 inline-block " + playerColorMap[i]}/>
+                <span>&nbsp;{i + " : " + props.scores[i]} </span></div>);
+        }
     }
     return (
         <div className={"absolute z-40 bg-white w-full h-full border-2 overscroll-auto overflow-auto " + displayClass}>
-            <ul className="list-disc list-inside p-2 col-count-2">
-                {foundWordsDisp}
-            </ul>
+            <div>
+                <ul className="list-disc list-inside p-2 col-count-2">
+                    {foundWordsDisp}
+                </ul>
+            </div>
+            <div>
+                {playersDisp}
+            </div>
         </div>
     )
 }
+
+function FoundWord(props: { i: MPGameWord, playerColor: string, isMultiplayer: boolean }) {
+
+    const playerDot = props.isMultiplayer ? <div className={"rounded-full h-2 w-2 inline-block " + props.playerColor}/> : null;
+
+    return <li>
+        <span className={props.i.is_pangram ? "underline font-bold" : ""}>{props.i.word}</span>
+        &nbsp;
+        {playerDot}
+    </li>;
+}
+
 
 interface SplashScreenProps {
     splashScreenVisible: boolean,
@@ -385,7 +416,7 @@ interface HexGridState {
     wordInProgress: string,
     validLetters: Set<string>,
     errorMessage: string,
-    foundWords: GameWord[],
+    foundWords: MPGameWord[],
     allWords: GameWord[],
     foundWordsVisible: boolean,
     endGameScreenVisible: boolean,
@@ -393,7 +424,8 @@ interface HexGridState {
     teamScore: number,
     rank: string,
     splashScreenVisible: boolean,
-    ranks: Record<string, number>
+    ranks: Record<string, number>,
+    scores: Record<string, number>
 }
 
 function pluralize(pointsLeft: number) {
@@ -425,7 +457,8 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
         teamScore: 0,
         rank: "EGG",
         splashScreenVisible: true,
-        ranks: {}
+        ranks: {},
+        scores: {}
     }
 
     async startGame(gameType: GameType, playerName: string) {
@@ -473,7 +506,8 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
             playerScore: data.scores[playerName],
             rank: data.current_rank,
             ranks: data.ranks,
-            gameType: data.game_type
+            gameType: data.game_type,
+            scores: data.scores
         });
     }
 
@@ -519,6 +553,7 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
                     foundWords: data.response.game_state.found_words,
                     playerScore: data.response.game_state.scores[this.state.playerName],
                     teamScore: data.response.game_state.team_score,
+                    scores: data.response.game_state.scores,
                     rank: data.response.game_state.current_rank
                 });
                 break;
@@ -535,10 +570,10 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
         let endGameState: EndGameState = await SpellBeeService.endGame({
             gameId: this.state.gameId
         });
-        console.log(endGameState);
         this.setState({
             endGameScreenVisible: true,
-            allWords: endGameState.response.all_words
+            allWords: endGameState.response.all_words,
+            scores: endGameState.response.game_state.scores
         });
     }
 
@@ -617,7 +652,7 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
                                      buttonText={`${this.state.foundWords.length} word${pluralize(this.state.foundWords.length)} found`}/>
                 </div>
                 <div className="relative max-w-md mt-2 mx-auto px-2">
-                    <FoundWords foundWords={this.state.foundWords} foundWordsVisible={this.state.foundWordsVisible}/>
+                    <FoundWordsList foundWords={this.state.foundWords} foundWordsVisible={this.state.foundWordsVisible} scores={this.state.scores} isMultiplayer={this.state.gameType !== SINGLE_PLAYER}/>
                     <Input wordInProgress={this.state.wordInProgress}
                            fieldUpdater={(newText: string) => this.handleUpdateToInputField(newText)}
                            formSubmitter={() => this.handleEnterButton()}
