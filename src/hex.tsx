@@ -8,7 +8,7 @@ import {
     GameType,
     GameWord,
     SubmitWordResponse,
-    StartGameRequest, JoinGameRequest, JoinGameResponse, MPGameWord
+    StartGameRequest, JoinGameRequest, JoinGameResponse, MPGameWord, GameUpdate
 } from "spellbee";
 
 const WORD_TOO_SHORT = "Words must be at least 4 letters."
@@ -139,7 +139,7 @@ function FoundWordsList(props: FoundWordsListProps) {
     const playersDisp: Array<JSX.Element> = [];
     if (props.isMultiplayer) {
         for (let i of players) {
-            playersDisp.push(<div className="">
+            playersDisp.push(<div className="" key={i}>
                 <div className={"rounded-full h-2 w-2 inline-block " + playerColorMap[i]}/>
                 <span>&nbsp;{i + " : " + props.scores[i]} </span></div>);
         }
@@ -425,7 +425,9 @@ interface HexGridState {
     rank: string,
     splashScreenVisible: boolean,
     ranks: Record<string, number>,
-    scores: Record<string, number>
+    scores: Record<string, number>,
+    gameCode: string,
+    eventSource?: EventSource
 }
 
 function pluralize(pointsLeft: number) {
@@ -458,7 +460,8 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
         rank: "EGG",
         splashScreenVisible: true,
         ranks: {},
-        scores: {}
+        scores: {},
+        gameCode: "",
     }
 
     async startGame(gameType: GameType, playerName: string) {
@@ -476,6 +479,9 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
 
         let data: GameState = await SpellBeeService.createGame(request);
         this.setStateFromServer(data, playerName);
+        if (gameType !== SINGLE_PLAYER) {
+            this.subscribeToUpdates(playerName, data.game_code);
+        }
     }
 
     async joinGame(playerName: string, gameCode: string) {
@@ -488,6 +494,39 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
             case "failed":
                 console.log(response.error_message);
                 break;
+        }
+        this.subscribeToUpdates(playerName, gameCode);
+    }
+
+    subscribeToUpdates(playerName: string, gameCode: string) {
+        const url = `${process.env.REACT_APP_BACKEND_HOST}/subscribeToUpdates/game/${gameCode}/player/${playerName}`;
+        const events = new EventSource(url);
+        this.setState({eventSource: events});
+        events.onopen = (event) => {
+            console.log("Opening connection");
+            console.log(event);
+        }
+        events.onmessage = (event) => {
+            console.log("on message");
+            console.log(event);
+            if (event.data == null || event.data === "") {
+                return;
+            }
+            const data: GameUpdate = JSON.parse(event.data);
+            console.log(data);
+            const newScores = this.state.scores;
+            newScores[data.found_word.player] = data.finder_score;
+            this.setState(prevState => ({
+                teamScore: data.team_score,
+                foundWords: [...prevState.foundWords, data.found_word],
+                rank: data.current_rank,
+                scores: newScores,
+                errorMessage: `${data.found_word.player} found ${data.found_word.word}`
+            }));
+        }
+        events.onerror = (event) => {
+            console.log("on error");
+            console.log(event);
         }
     }
 
@@ -507,7 +546,8 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
             rank: data.current_rank,
             ranks: data.ranks,
             gameType: data.game_type,
-            scores: data.scores
+            scores: data.scores,
+            gameCode: data.game_code
         });
     }
 
@@ -575,6 +615,9 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
             allWords: endGameState.response.all_words,
             scores: endGameState.response.game_state.scores
         });
+        if (this.state.eventSource != null) {
+            this.state.eventSource.close();
+        }
     }
 
     delete() {
