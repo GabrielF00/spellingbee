@@ -10,6 +10,7 @@ import {
     SubmitWordResponse,
     StartGameRequest, JoinGameRequest, JoinGameResponse, MPGameWord, GameUpdate
 } from "spellbee";
+import {Route, Switch} from "react-router-dom";
 
 const WORD_TOO_SHORT = "Words must be at least 4 letters."
 
@@ -171,9 +172,11 @@ function FoundWord(props: { i: MPGameWord, playerColor: string, isMultiplayer: b
 
 
 interface SplashScreenProps {
+    gameSpecifiedInUrl: boolean,
     splashScreenVisible: boolean,
     newGameClickHandler: any,
-    joinGameClickHandler: any
+    joinGameClickHandler: any,
+    gameCode: string
 }
 
 interface SplashScreenState {
@@ -190,7 +193,7 @@ class SplashScreen extends React.Component<SplashScreenProps, SplashScreenState>
     }
 
     state = {
-        joinGameFormVisible: false,
+        joinGameFormVisible: this.props.gameSpecifiedInUrl,
         newCoopGameFormVisible: false,
         newCompetitiveGameFormVisible: false
     }
@@ -232,7 +235,7 @@ class SplashScreen extends React.Component<SplashScreenProps, SplashScreenState>
                     <hr/>
                     <ExpandingButton onClick={() => this.handleJoinGameButtonPush()} contentVisible={this.state.joinGameFormVisible}
                                      buttonText={"Join Existing Game"}/>
-                    <JoinGameForm placeHolderText={"Player Name"} handleSubmit={this.props.joinGameClickHandler} isVisible={this.state.joinGameFormVisible}/>
+                    <JoinGameForm gameCode={this.props.gameCode} placeHolderText={"Player Name"} handleSubmit={this.props.joinGameClickHandler} isVisible={this.state.joinGameFormVisible}/>
                     <ExpandingButton onClick={() => this.handleNewCoopGameButtonPush()} contentVisible={this.state.newCoopGameFormVisible}
                                      buttonText={"New Cooperative Game"}/>
                     <HiddenForm placeHolderText={"Player name"} handleSubmit={this.handleNewCoopGameSubmit} isVisible={this.state.newCoopGameFormVisible}/>
@@ -352,13 +355,17 @@ class HiddenForm extends React.Component<HiddenFormProps, HiddenFormState> {
     }
 }
 
+interface JoinGameFormProps extends HiddenFormProps {
+    gameCode: string
+}
+
 interface JoinGameFormState {
     gameCode: string,
     playerName: string
 }
 
-class JoinGameForm extends React.Component<HiddenFormProps, JoinGameFormState> {
-    constructor(props: HiddenFormProps) {
+class JoinGameForm extends React.Component<JoinGameFormProps, JoinGameFormState> {
+    constructor(props: JoinGameFormProps) {
         super(props);
         this.handleGameCodeChange = this.handleGameCodeChange.bind(this);
         this.handlePlayerNameChange = this.handlePlayerNameChange.bind(this);
@@ -366,7 +373,7 @@ class JoinGameForm extends React.Component<HiddenFormProps, JoinGameFormState> {
     }
 
     state = {
-        gameCode: '',
+        gameCode: this.props.gameCode,
         playerName: ''
     }
 
@@ -547,7 +554,8 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
             ranks: data.ranks,
             gameType: data.game_type,
             scores: data.scores,
-            gameCode: data.game_code
+            gameCode: data.game_code,
+            errorMessage: ""
         });
     }
 
@@ -714,8 +722,18 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
                         </button>
                     </div>
                 </div>
-                <SplashScreen splashScreenVisible={this.state.splashScreenVisible}
-                              newGameClickHandler={this.startGame} joinGameClickHandler={this.joinGame}/>
+                <Switch>
+                    <Route path="/game/:gameCode" render={(routeProps) => {
+                            return <SplashScreen gameSpecifiedInUrl={true} splashScreenVisible={this.state.splashScreenVisible}
+                                      newGameClickHandler={this.startGame} joinGameClickHandler={this.joinGame} gameCode={routeProps.match.params.gameCode}/>}
+                        }
+                    />
+                    <Route path="/">
+                        <SplashScreen gameSpecifiedInUrl={false}
+                                      splashScreenVisible={this.state.splashScreenVisible}
+                                      newGameClickHandler={this.startGame} joinGameClickHandler={this.joinGame} gameCode=""/>
+                    </Route>
+                </Switch>
                 <EndGameScreen endGameScreenVisible={this.state.endGameScreenVisible} foundWords={this.state.foundWords}
                                score={this.state.teamScore} maxScore={this.state.ranks["QUEEN"]} rank={this.state.rank}
                                allWords={this.state.allWords} closeButtonHandler={() => this.closeEndGameScreen()}/>
