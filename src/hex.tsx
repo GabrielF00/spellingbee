@@ -134,16 +134,29 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
                 return;
             }
             const data: GameUpdate = JSON.parse(event.data);
-            console.log(data);
-            const newScores = this.state.scores;
-            newScores[data.found_word.player] = data.finder_score;
-            this.setState(prevState => ({
-                teamScore: data.team_score,
-                foundWords: [...prevState.foundWords, data.found_word],
-                rank: data.current_rank,
-                scores: newScores,
-                errorMessage: `${data.found_word.player} found ${data.found_word.word}`
-            }));
+            switch (data.type) {
+                case "word_found":
+                    const newScores = this.state.scores;
+                    newScores[data.update.found_word.player] = data.update.finder_score;
+                    this.setState(prevState => ({
+                        teamScore: data.update.team_score,
+                        foundWords: [...prevState.foundWords, data.update.found_word],
+                        rank: data.update.current_rank,
+                        scores: newScores,
+                        errorMessage: `${data.update.found_word.player} found ${data.update.found_word.word} for ${data.update.found_word.score}`
+                    }));
+                    break;
+                case "player_joined":
+                    this.setState({
+                        errorMessage: `${data.update.player_name} joined`
+                    });
+                    break;
+                case "player_left":
+                    this.setState({
+                        errorMessage: `${data.update.player_name} left the game`
+                    });
+                    break;
+            }
         }
         events.onerror = (event) => {
             console.log("on error");
