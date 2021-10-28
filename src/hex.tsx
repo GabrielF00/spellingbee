@@ -105,31 +105,26 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
         }
     }
 
-    async joinGame(playerName: string, gameCode: string) {
+    async joinGame(playerName: string, gameCode: string, errorCallback: (errorMessage: string) => void) {
         let request: JoinGameRequest = {player_name: playerName, game_id: gameCode};
         let response: JoinGameResponse = await SpellBeeService.joinGame(request);
         switch(response.state) {
             case "success":
                 this.setStateFromServer(response.response.game_state, playerName);
+                this.subscribeToUpdates(playerName, gameCode);
                 break;
             case "failed":
                 console.log(response.error_message);
+                errorCallback(response.error_message);
                 break;
         }
-        this.subscribeToUpdates(playerName, gameCode);
     }
 
     subscribeToUpdates(playerName: string, gameCode: string) {
         const url = `${process.env.REACT_APP_BACKEND_HOST}/subscribeToUpdates/game/${gameCode}/player/${playerName}`;
         const events = new EventSource(url);
         this.setState({eventSource: events});
-        events.onopen = (event) => {
-            console.log("Opening connection");
-            console.log(event);
-        }
         events.onmessage = (event) => {
-            console.log("on message");
-            console.log(event);
             if (event.data == null || event.data === "") {
                 return;
             }
@@ -157,10 +152,6 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
                     });
                     break;
             }
-        }
-        events.onerror = (event) => {
-            console.log("on error");
-            console.log(event);
         }
     }
 

@@ -7,7 +7,8 @@ interface JoinGameFormProps extends HiddenFormProps {
 
 interface JoinGameFormState {
     gameCode: string,
-    playerName: string
+    playerName: string,
+    errorMessage: string
 }
 
 export class JoinGameForm extends React.Component<JoinGameFormProps, JoinGameFormState> {
@@ -16,11 +17,13 @@ export class JoinGameForm extends React.Component<JoinGameFormProps, JoinGameFor
         this.handleGameCodeChange = this.handleGameCodeChange.bind(this);
         this.handlePlayerNameChange = this.handlePlayerNameChange.bind(this);
         this.submit = this.submit.bind(this);
+        this.errorCallback = this.errorCallback.bind(this);
     }
 
     state = {
         gameCode: this.props.gameCode,
-        playerName: ''
+        playerName: '',
+        errorMessage: ''
     }
 
     handleGameCodeChange(event: ChangeEvent<HTMLInputElement>) {
@@ -32,12 +35,20 @@ export class JoinGameForm extends React.Component<JoinGameFormProps, JoinGameFor
     }
 
     submit(event: FormEvent<HTMLFormElement>) {
-        this.props.handleSubmit(this.state.playerName, this.state.gameCode);
+        this.props.handleSubmit(this.state.playerName, this.state.gameCode, this.errorCallback);
+        this.errorCallback('');
         event.preventDefault();
+    }
+
+    errorCallback(errorMessage: string) {
+        this.setState({
+            errorMessage: errorMessage
+        });
     }
 
     render() {
         const displayClass = this.props.isVisible ? "block" : "hidden";
+        const errorDisplayClass = this.state.errorMessage === '' ? "hidden" : "block";
         return <div className={displayClass}>
             <form className="" onSubmit={this.submit}>
                 <input type="text"
@@ -52,6 +63,9 @@ export class JoinGameForm extends React.Component<JoinGameFormProps, JoinGameFor
                            onChange={this.handlePlayerNameChange}
                            className="uppercase w-5/6 font-bold pl-2 ml-2"/>
                     <input type="submit" className="btn-gold" value="GO!"/>
+                </div>
+                <div className={"bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative " + errorDisplayClass} role="alert">
+                    <strong className="font-bold">{this.state.errorMessage}</strong>
                 </div>
             </form>
         </div>
