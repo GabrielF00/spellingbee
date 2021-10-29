@@ -23,6 +23,7 @@ import {EndGameScreen} from "./components/endGameScreen";
 import {SplashScreen} from "./components/splashScreen";
 import {FoundWordsList} from "./components/foundWordsList";
 import ReactGA from 'react-ga'
+import {Modal} from "./components/modal";
 
 const WORD_TOO_SHORT = "Words must be at least 4 letters."
 
@@ -53,6 +54,7 @@ interface HexGridState {
     ranks: Record<string, number>,
     scores: Record<string, number>,
     gameCode: string,
+    displayCelebration: boolean,
     eventSource?: EventSource
 }
 
@@ -62,6 +64,7 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
         super(props);
         this.startGame = this.startGame.bind(this);
         this.joinGame = this.joinGame.bind(this);
+        this.dismissCelebration = this.dismissCelebration.bind(this);
     }
 
     state: HexGridState = {
@@ -83,6 +86,7 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
         splashScreenVisible: true,
         ranks: {},
         scores: {},
+        displayCelebration: false,
         gameCode: "",
     }
 
@@ -227,15 +231,17 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
         });
         switch(data.state) {
             case "success":
-                this.setState({
+                const response = data.response;
+                this.setState(prevState => ({
                     wordInProgress: "",
-                    errorMessage: `${data.response.is_pangram ? "Pangram! - " : ""} ${data.response.word_score} Point${this.pluralize(data.response.word_score)}!`,
-                    foundWords: data.response.game_state.found_words,
-                    playerScore: data.response.game_state.scores[this.state.playerName],
-                    teamScore: data.response.game_state.team_score,
-                    scores: data.response.game_state.scores,
-                    rank: data.response.game_state.current_rank
-                });
+                    errorMessage: `${response.is_pangram ? "Pangram! - " : ""} ${response.word_score} Point${this.pluralize(response.word_score)}!`,
+                    foundWords: response.game_state.found_words,
+                    playerScore: response.game_state.scores[this.state.playerName],
+                    teamScore: response.game_state.team_score,
+                    scores: response.game_state.scores,
+                    rank: response.game_state.current_rank,
+                    displayCelebration: this.shouldDisplayCelebration(prevState.rank, response.game_state.current_rank)
+                }));
                 break;
             case "failed":
                 this.setState({
@@ -249,6 +255,15 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
             action: 'SUBMIT_WORD',
             label: data.state
         });
+    }
+
+    shouldDisplayCelebration(prevRank: string, newRank: string): boolean {
+        if (prevRank !== "GENIUS" && newRank === "GENIUS") {
+            return true;
+        } else if (prevRank !== "QUEEN" && newRank === "QUEEN") {
+            return true;
+        }
+        return false;
     }
 
     async endGame() {
@@ -332,6 +347,12 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
         return value === 1 ? "" : "s";
     }
 
+    dismissCelebration() {
+        this.setState({
+            displayCelebration: false
+        });
+    }
+
     render() {
         const tiles: Array<JSX.Element> = [];
         for (let i: number = 0; i < 3 ; i++) {
@@ -363,6 +384,17 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
                     Leave game
                 </button>
             </div>;
+
+        let celebrationText: string = "";
+        if (this.state.rank === "GENIUS") {
+            celebrationText = "You've found most of the words in the puzzle. Keep going to find them all.";
+        } else if (this.state.rank === "QUEEN") {
+            celebrationText = "You've found all of the words in the puzzle!";
+        }
+
+        const celebrationModal = this.state.displayCelebration
+            ? <Modal title={this.state.rank.toUpperCase() + "!"} content={celebrationText} closeCallback={() => this.dismissCelebration()}/>
+            : null;
 
         return (
             <div className="relative max-w-md mt-2 mx-auto">
@@ -408,6 +440,7 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
                 <EndGameScreen endGameScreenVisible={this.state.endGameScreenVisible} foundWords={this.state.foundWords}
                                score={this.state.teamScore} maxScore={this.state.ranks["QUEEN"]} rank={this.state.rank}
                                allWords={this.state.allWords} closeButtonHandler={() => this.closeEndGameScreen()}/>
+                {celebrationModal}
             </div>
         );
     }
