@@ -22,6 +22,7 @@ import {ExpandingButton} from "./components/expandingButton";
 import {EndGameScreen} from "./components/endGameScreen";
 import {SplashScreen} from "./components/splashScreen";
 import {FoundWordsList} from "./components/foundWordsList";
+import ReactGA from 'react-ga'
 
 const WORD_TOO_SHORT = "Words must be at least 4 letters."
 
@@ -88,13 +89,16 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
     async startGame(gameType: GameType, playerName: string) {
 
         let request: StartGameRequest;
+        let metricLabel: string;
         switch (gameType) {
             case SINGLE_PLAYER:
                 request = {game_type: SINGLE_PLAYER}
+                metricLabel = "SINGLE_PLAYER";
                 break;
             case COMPETITIVE:
             case COOP:
                 request = {game_type: gameType, player_name: playerName}
+                metricLabel = "COOP";
                 break;
         }
 
@@ -103,6 +107,11 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
         if (gameType !== SINGLE_PLAYER) {
             this.subscribeToUpdates(playerName, data.game_code);
         }
+        ReactGA.event({
+            category: 'GAME_ACTIONS',
+            action: 'START_GAME',
+            label: metricLabel
+        });
     }
 
     async joinGame(playerName: string, gameCode: string, errorCallback: (errorMessage: string) => void) {
@@ -118,6 +127,11 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
                 errorCallback(response.error_message);
                 break;
         }
+        ReactGA.event({
+            category: 'GAME_ACTIONS',
+            action: 'JOIN_GAME',
+            label: response.state
+        });
     }
 
     subscribeToUpdates(playerName: string, gameCode: string) {
@@ -230,6 +244,11 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
                 });
                 break;
         }
+        ReactGA.event({
+            category: 'GAME_ACTIONS',
+            action: 'SUBMIT_WORD',
+            label: data.state
+        });
     }
 
     async endGame() {
@@ -244,6 +263,10 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
         if (this.state.eventSource != null) {
             this.state.eventSource.close();
         }
+        ReactGA.event({
+            category: 'GAME_ACTIONS',
+            action: 'END_GAME',
+        });
     }
 
     delete() {
@@ -299,6 +322,10 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
                 url: shareUrl
             })
         }
+        ReactGA.event({
+            category: 'GAME_ACTIONS',
+            action: 'SHARE_GAME',
+        });
     }
 
     pluralize(value: number) {
