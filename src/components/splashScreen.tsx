@@ -77,11 +77,15 @@ export class SplashScreen extends React.Component<SplashScreenProps, SplashScree
                                      buttonText={"New Cooperative Game"}/>
                     <HiddenForm placeHolderText={"Player name"} handleSubmit={this.handleNewCoopGameSubmit}
                                 isVisible={this.state.newCoopGameFormVisible}/>
-                    <ExpandingButton onClick={() => this.handleNewCompetitiveGameButtonPush()}
-                                     contentVisible={this.state.newCompetitiveGameFormVisible}
-                                     buttonText={"New Competitive Game"}/>
-                    <HiddenForm placeHolderText={"Player name"} handleSubmit={this.props.newGameClickHandler}
-                                isVisible={this.state.newCompetitiveGameFormVisible}/>
+                    {/*<ExpandingButton onClick={() => this.handleNewCompetitiveGameButtonPush()}*/}
+                    {/*                 contentVisible={this.state.newCompetitiveGameFormVisible}*/}
+                    {/*                 buttonText={"New Competitive Game"}/>*/}
+                    {/*<HiddenForm placeHolderText={"Player name"} handleSubmit={this.props.newGameClickHandler}*/}
+                    {/*            isVisible={this.state.newCompetitiveGameFormVisible}/>*/}
+                    <p className="text-center font-semibold pt-6">Instructions:</p>
+                    <p className="pt-6 px-2">Find words using the grid of seven letters. Each word must contain the middle letter. Letters can be used multiple times. There is at least one pangram, which contains all the letters in the grid, and is worth extra points.</p>
+                    <p className="text-sm text-center pt-6">By Gabriel Fishman </p>
+                    <p className="text-sm text-center">Inspired by the Spelling Bee puzzle in the New York Times </p>
                 </div>
             </div>
         )
