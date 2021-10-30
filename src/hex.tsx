@@ -55,6 +55,7 @@ interface HexGridState {
     scores: Record<string, number>,
     gameCode: string,
     displayCelebration: boolean,
+    displayShareModal: boolean,
     eventSource?: EventSource
 }
 
@@ -87,6 +88,7 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
         ranks: {},
         scores: {},
         displayCelebration: false,
+        displayShareModal: false,
         gameCode: "",
     }
 
@@ -329,18 +331,25 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
     }
 
     share() {
-        const shareUrl = process.env.PUBLIC_URL + "/game/" + this.state.gameCode;
+        const shareUrl = this.getShareUrl();
         if (navigator.share) {
             navigator.share({
                 title: 'Join my game of Bee Genius',
                 text: 'Join my game of Bee Genius',
                 url: shareUrl
             })
+        } else {
+            console.log("share");
+            this.setState({displayShareModal: true});
         }
         ReactGA.event({
             category: 'GAME_ACTIONS',
             action: 'SHARE_GAME',
         });
+    }
+
+    private getShareUrl() {
+        return "/game/" + this.state.gameCode;
     }
 
     pluralize(value: number) {
@@ -350,6 +359,12 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
     dismissCelebration() {
         this.setState({
             displayCelebration: false
+        });
+    }
+
+    dismissShareModal() {
+        this.setState({
+            displayShareModal: false
         });
     }
 
@@ -394,6 +409,11 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
 
         const celebrationModal = this.state.displayCelebration
             ? <Modal title={this.state.rank.toUpperCase() + "!"} content={celebrationText} closeCallback={() => this.dismissCelebration()}/>
+            : null;
+
+        const shareUrl = process.env.REACT_APP_FRONTEND_URL + this.getShareUrl();
+        const shareModal = this.state.displayShareModal
+            ? <Modal title="Invite friends" content={"Share this URL with friends: \n" + shareUrl} closeCallback={() => this.dismissShareModal()}/>
             : null;
 
         return (
@@ -441,6 +461,7 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
                                score={this.state.teamScore} maxScore={this.state.ranks["QUEEN"]} rank={this.state.rank}
                                allWords={this.state.allWords} closeButtonHandler={() => this.closeEndGameScreen()}/>
                 {celebrationModal}
+                {shareModal}
             </div>
         );
     }
