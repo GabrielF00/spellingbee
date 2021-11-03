@@ -158,7 +158,8 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
                         foundWords: [...prevState.foundWords, data.update.found_word],
                         rank: data.update.current_rank,
                         scores: newScores,
-                        errorMessage: `${data.update.found_word.player} found ${data.update.found_word.word} for ${data.update.found_word.score}`
+                        errorMessage: `${data.update.found_word.player} found ${data.update.found_word.word} for ${data.update.found_word.score}`,
+                        displayCelebration: this.shouldDisplayCelebration(prevState.rank, data.update.current_rank)
                     }));
                     break;
                 case "player_joined":
@@ -401,10 +402,11 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
             </div>;
 
         let celebrationText: string = "";
+        const yourText = this.state.gameType === SINGLE_PLAYER ? "You've" : "Your team has";
         if (this.state.rank === "GENIUS") {
-            celebrationText = "You've found most of the words in the puzzle. Keep going to find them all.";
+            celebrationText = `${yourText} found most of the words in the puzzle. Keep going to find them all.`;
         } else if (this.state.rank === "QUEEN") {
-            celebrationText = "You've found all of the words in the puzzle!";
+            celebrationText = `${yourText} found all of the words in the puzzle!`;
         }
 
         const celebrationModal = this.state.displayCelebration
