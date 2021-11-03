@@ -29,6 +29,7 @@
     transform: rotate(-60deg) skewY(30deg);
     overflow: hidden;
     visibility: hidden;
+    touch-action: none;
 }
 
 #grid li .hexagon {
@@ -47,6 +48,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    touch-action: none;
 }
 
 #grid li:nth-child(4) .hexagon {
@@ -89,14 +91,18 @@
 
 .btn-gray {
      @apply bg-gray-500 text-white font-bold py-2 px-4 rounded m-2;
+    touch-action: none;
  }
+
 .btn-gray:hover {
     @apply bg-gray-700;
 }
 
 .btn-gold {
     @apply bg-yellow-600 text-white font-bold py-2 px-4 rounded m-2;
+    touch-action: none;
 }
+
 .btn-gray:hover {
     @apply bg-yellow-700;
 }
