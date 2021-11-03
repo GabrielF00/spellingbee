@@ -30,6 +30,7 @@
     overflow: hidden;
     visibility: hidden;
     touch-action: none;
+    -webkit-tap-highlight-color: transparent;
 }
 
 #grid li .hexagon {
@@ -49,6 +50,11 @@
     align-items: center;
     justify-content: center;
     touch-action: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+#grid li .hexagon:hover {
+    background: #b4b5b9;
 }
 
 #grid li:nth-child(4) .hexagon {

@@ -29,6 +29,10 @@ class SpellBeeService {
         return await http.post<EndGameRequest, AxiosResponse<EndGameState>>("/endGame", data).then(response => response.data);
     }
 
+    async leaveGame(data: EndGameRequest): Promise<EndGameState> {
+        return await http.post<EndGameRequest, AxiosResponse<EndGameState>>("/leaveGame", data).then(response => response.data);
+    }
+
 }
 
 export default new SpellBeeService();

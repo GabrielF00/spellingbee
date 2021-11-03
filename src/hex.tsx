@@ -2,6 +2,7 @@ import React from 'react';
 import './css/hexgrid.css';
 import SpellBeeService from "./data_service";
 import {
+    EndGameRequest,
     EndGameState,
     GameState,
     GameType,
@@ -271,9 +272,13 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
     }
 
     async endGame() {
-        let endGameState: EndGameState = await SpellBeeService.endGame({
-            gameId: this.state.gameId
-        });
+        const endGameRequest: EndGameRequest = {
+            gameId: this.state.gameId,
+            player_name: this.state.playerName
+        }
+        let endGameState: EndGameState = this.state.gameType === SINGLE_PLAYER
+            ? await SpellBeeService.endGame(endGameRequest)
+            : await SpellBeeService.leaveGame(endGameRequest);
         this.setState({
             endGameScreenVisible: true,
             allWords: endGameState.response.all_words,
