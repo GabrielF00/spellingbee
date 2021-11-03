@@ -23,7 +23,7 @@ import {EndGameScreen} from "./components/endGameScreen";
 import {SplashScreen} from "./components/splashScreen";
 import {FoundWordsList} from "./components/foundWordsList";
 import ReactGA from 'react-ga'
-import {CancelButton, CloseButton, Modal} from "./components/modal";
+import {Button, CancelButton, CloseButton, Modal} from "./components/modal";
 
 const WORD_TOO_SHORT = "Words must be at least 4 letters."
 
@@ -410,7 +410,7 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
         const leaveModal = this.state.displayLeaveModal
             ? <Modal title="Leave game" content={"Are you sure you want to leave the game?"} buttons={[
                     <CancelButton onClick={() => { this.setState({ displayLeaveModal: false } )}} />,
-                    <CloseButton onClick={() => { this.setState({ displayLeaveModal: false }); this.endGame()}} />
+                    <Button onClick={() => { this.setState({ displayLeaveModal: false }); this.endGame()}}  buttonClass={"btn-gold"} buttonText="Leave"/>
                 ]} />
             : null;
 

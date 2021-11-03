@@ -1,6 +1,6 @@
 import React, {ReactNodeArray} from "react";
 
-class Button extends React.Component<{ onClick: () => void, buttonText: string, buttonClass: string }> {
+export class Button extends React.Component<{ onClick: () => void, buttonText: string, buttonClass: string }> {
     render() {
         return <button className={this.props.buttonClass} onClick={this.props.onClick}>{this.props.buttonText}</button>;
     }
