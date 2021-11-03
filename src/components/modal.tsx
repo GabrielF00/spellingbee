@@ -1,6 +1,24 @@
-import React from "react";
+import React, {ReactNodeArray} from "react";
 
-export function Modal(props: { title: string, content: string, closeCallback: () => void }) {
+class Button extends React.Component<{ onClick: () => void, buttonText: string, buttonClass: string }> {
+    render() {
+        return <button className={this.props.buttonClass} onClick={this.props.onClick}>{this.props.buttonText}</button>;
+    }
+}
+
+export class CloseButton extends React.Component<{ onClick: () => void }> {
+    render() {
+        return <Button onClick={this.props.onClick} buttonText={"Close"} buttonClass={"btn-gray"}/>;
+    }
+}
+
+export class CancelButton extends React.Component<{ onClick: () => void }> {
+    render() {
+        return <Button onClick={this.props.onClick} buttonText={"Cancel"} buttonClass={"btn-gray"}/>;
+    }
+}
+
+export function Modal(props: { title: string, content: string, buttons: ReactNodeArray }) {
     return (
         <div className="modal fixed w-full h-full top-0 left-0 flex items-center justify-center">
             <div className="modal-overlay absolute w-full h-full bg-gray-900 opacity-50"/>
@@ -12,7 +30,7 @@ export function Modal(props: { title: string, content: string, closeCallback: ()
                     </div>
                     {props.content}
                     <div className="flex justify-end pt-2">
-                        <button className="btn-gray" onClick={props.closeCallback}>Close</button>
+                        {props.buttons}
                     </div>
                 </div>
             </div>

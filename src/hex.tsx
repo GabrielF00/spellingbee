@@ -23,7 +23,7 @@ import {EndGameScreen} from "./components/endGameScreen";
 import {SplashScreen} from "./components/splashScreen";
 import {FoundWordsList} from "./components/foundWordsList";
 import ReactGA from 'react-ga'
-import {Modal} from "./components/modal";
+import {CancelButton, CloseButton, Modal} from "./components/modal";
 
 const WORD_TOO_SHORT = "Words must be at least 4 letters."
 
@@ -56,6 +56,7 @@ interface HexGridState {
     gameCode: string,
     displayCelebration: boolean,
     displayShareModal: boolean,
+    displayLeaveModal: boolean,
     eventSource?: EventSource
 }
 
@@ -65,7 +66,6 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
         super(props);
         this.startGame = this.startGame.bind(this);
         this.joinGame = this.joinGame.bind(this);
-        this.dismissCelebration = this.dismissCelebration.bind(this);
     }
 
     state: HexGridState = {
@@ -89,6 +89,7 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
         scores: {},
         displayCelebration: false,
         displayShareModal: false,
+        displayLeaveModal: false,
         gameCode: "",
     }
 
@@ -357,18 +358,6 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
         return value === 1 ? "" : "s";
     }
 
-    dismissCelebration() {
-        this.setState({
-            displayCelebration: false
-        });
-    }
-
-    dismissShareModal() {
-        this.setState({
-            displayShareModal: false
-        });
-    }
-
     render() {
         const tiles: Array<JSX.Element> = [];
         for (let i: number = 0; i < 3 ; i++) {
@@ -388,7 +377,7 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
 
         const bottomButtons = this.state.gameType === SINGLE_PLAYER
             ? <div className="mx-auto flex justify-content-center">
-                <button className="btn-gray flex-1" onClick={() => this.endGame()}>
+                <button className="btn-gray flex-1" onClick={() => this.setState({ displayLeaveModal: true })}>
                     End game and show answers
                 </button>
                 </div>
@@ -396,7 +385,7 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
                 <button className="btn-gray flex-1" onClick={() => this.share()}>
                     Share
                 </button>
-                <button className="btn-gray flex-1" onClick={() => this.endGame()}>
+                <button className="btn-gray flex-1" onClick={() => this.setState({ displayLeaveModal: true })}>
                     Leave game
                 </button>
             </div>;
@@ -410,12 +399,19 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
         }
 
         const celebrationModal = this.state.displayCelebration
-            ? <Modal title={this.state.rank.toUpperCase() + "!"} content={celebrationText} closeCallback={() => this.dismissCelebration()}/>
+            ? <Modal title={this.state.rank.toUpperCase() + "!"} content={celebrationText} buttons={new Array(<CloseButton onClick={() => this.setState({ displayCelebration: false })}/>)}/>
             : null;
 
         const shareUrl = process.env.REACT_APP_FRONTEND_URL + this.getShareUrl();
         const shareModal = this.state.displayShareModal
-            ? <Modal title="Invite friends" content={"Share this URL with friends: \n" + shareUrl} closeCallback={() => this.dismissShareModal()}/>
+            ? <Modal title="Invite friends" content={"Share this URL with friends: \n" + shareUrl} buttons={new Array(<CloseButton onClick={() => this.setState({ displayShareModal: false })}/>)}/>
+            : null;
+
+        const leaveModal = this.state.displayLeaveModal
+            ? <Modal title="Leave game" content={"Are you sure you want to leave the game?"} buttons={[
+                    <CancelButton onClick={() => { this.setState({ displayLeaveModal: false } )}} />,
+                    <CloseButton onClick={() => { this.setState({ displayLeaveModal: false }); this.endGame()}} />
+                ]} />
             : null;
 
         return (
@@ -464,6 +460,7 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
                                allWords={this.state.allWords} closeButtonHandler={() => this.closeEndGameScreen()}/>
                 {celebrationModal}
                 {shareModal}
+                {leaveModal}
             </div>
         );
     }
