@@ -346,7 +346,6 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
                 url: shareUrl
             })
         } else {
-            console.log("share");
             this.setState({displayShareModal: true});
         }
         ReactGA.event({
@@ -404,12 +403,16 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
         }
 
         const celebrationModal = this.state.displayCelebration
-            ? <Modal title={this.state.rank.toUpperCase() + "!"} content={celebrationText} buttons={new Array(<CloseButton onClick={() => this.setState({ displayCelebration: false })}/>)}/>
+            ? <Modal title={this.state.rank.toUpperCase() + "!"} content={celebrationText} buttons={
+                new Array(<CloseButton onClick={() => this.setState({ displayCelebration: false })}/>)}
+              />
             : null;
 
         const shareUrl = process.env.REACT_APP_FRONTEND_URL + this.getShareUrl();
         const shareModal = this.state.displayShareModal
-            ? <Modal title="Invite friends" content={"Share this URL with friends: \n" + shareUrl} buttons={new Array(<CloseButton onClick={() => this.setState({ displayShareModal: false })}/>)}/>
+            ? <Modal title="Invite friends" content={"Share this URL with friends: \n" + shareUrl} buttons={
+                new Array(<CloseButton onClick={() => this.setState({ displayShareModal: false })}/>)}
+              />
             : null;
 
         const leaveModal = this.state.displayLeaveModal
@@ -433,7 +436,8 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
                                      buttonText={`${this.state.foundWords.length} word${this.pluralize(this.state.foundWords.length)} found`}/>
                 </div>
                 <div className="relative max-w-md mt-2 mx-auto px-2">
-                    <FoundWordsList foundWords={this.state.foundWords} foundWordsVisible={this.state.foundWordsVisible} scores={this.state.scores} isMultiplayer={this.state.gameType !== SINGLE_PLAYER}/>
+                    <FoundWordsList foundWords={this.state.foundWords} foundWordsVisible={this.state.foundWordsVisible}
+                                    scores={this.state.scores} isMultiplayer={this.state.gameType !== SINGLE_PLAYER}/>
                     <Input wordInProgress={this.state.wordInProgress}
                            fieldUpdater={(newText: string) => this.handleUpdateToInputField(newText)}
                            formSubmitter={() => this.handleEnterButton()}
