@@ -1,4 +1,5 @@
 import React, {ChangeEvent, FormEvent} from "react";
+import {ErrorAlert} from "./errorAlert";
 
 export interface HiddenFormProps {
     placeHolderText: string,
@@ -7,7 +8,8 @@ export interface HiddenFormProps {
 }
 
 interface HiddenFormState {
-    value: string
+    value: string,
+    errorMessage: string
 }
 
 export class HiddenForm extends React.Component<HiddenFormProps, HiddenFormState> {
@@ -18,7 +20,8 @@ export class HiddenForm extends React.Component<HiddenFormProps, HiddenFormState
     }
 
     state = {
-        value: ''
+        value: '',
+        errorMessage: ''
     }
 
     handleChange(event: ChangeEvent<HTMLInputElement>) {
@@ -26,8 +29,12 @@ export class HiddenForm extends React.Component<HiddenFormProps, HiddenFormState
     }
 
     submit(event: FormEvent<HTMLFormElement>) {
-        this.props.handleSubmit(this.state.value);
         event.preventDefault();
+        if (this.state.value === '') {
+            this.setState({ errorMessage: 'Please enter a name.' });
+            return;
+        }
+        this.props.handleSubmit(this.state.value);
     }
 
     render() {
@@ -41,6 +48,7 @@ export class HiddenForm extends React.Component<HiddenFormProps, HiddenFormState
                        className="uppercase w-5/6 font-bold pl-2 ml-2"/>
                 <input type="submit" className="btn-gold" value="GO!"/>
             </form>
+            <ErrorAlert errorMessage={this.state.errorMessage}/>
         </div>
     }
 }

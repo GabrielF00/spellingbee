@@ -1,5 +1,6 @@
 import React, {ChangeEvent, FormEvent} from "react";
 import {HiddenFormProps} from "./hiddenForm";
+import {ErrorAlert} from "./errorAlert";
 
 interface JoinGameFormProps extends HiddenFormProps {
     gameCode: string
@@ -35,9 +36,13 @@ export class JoinGameForm extends React.Component<JoinGameFormProps, JoinGameFor
     }
 
     submit(event: FormEvent<HTMLFormElement>) {
+        event.preventDefault();
+        if (this.state.playerName === '') {
+            this.errorCallback("Please enter a name.")
+            return;
+        }
         this.props.handleSubmit(this.state.playerName, this.state.gameCode, this.errorCallback);
         this.errorCallback('');
-        event.preventDefault();
     }
 
     errorCallback(errorMessage: string) {
@@ -48,7 +53,6 @@ export class JoinGameForm extends React.Component<JoinGameFormProps, JoinGameFor
 
     render() {
         const displayClass = this.props.isVisible ? "block" : "hidden";
-        const errorDisplayClass = this.state.errorMessage === '' ? "hidden" : "block";
         return <div className={displayClass}>
             <form className="" onSubmit={this.submit}>
                 <input type="text"
@@ -64,9 +68,7 @@ export class JoinGameForm extends React.Component<JoinGameFormProps, JoinGameFor
                            className="uppercase w-5/6 font-bold pl-2 ml-2"/>
                     <input type="submit" className="btn-gold" value="GO!"/>
                 </div>
-                <div className={"bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative " + errorDisplayClass} role="alert">
-                    <strong className="font-bold">{this.state.errorMessage}</strong>
-                </div>
+                <ErrorAlert errorMessage={this.state.errorMessage}/>
             </form>
         </div>
     }
