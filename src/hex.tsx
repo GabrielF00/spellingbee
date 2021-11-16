@@ -10,7 +10,7 @@ import {
     GameWord,
     JoinGameRequest,
     JoinGameResponse,
-    MPGameWord,
+    MPGameWord, Player, RejoinGameRequest, RejoinGameResponse,
     StartGameRequest,
     SubmitWordResponse
 } from "spellbee";
@@ -27,10 +27,17 @@ import ReactGA from 'react-ga'
 import {Button, CancelButton, CloseButton, Modal} from "./components/modal";
 
 const WORD_TOO_SHORT = "Words must be at least 4 letters."
+const LOCAL_STORAGE_SAVED_GAME = "savedGame";
 
 export const SINGLE_PLAYER = 0;
 export const COMPETITIVE = 1;
 export const COOP = 2;
+
+interface LocalSavedGame {
+    gameType: GameType,
+    gameId: number,
+    playerName: Player
+}
 
 interface HexGridProps {
 }
@@ -115,6 +122,7 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
         if (gameType !== SINGLE_PLAYER) {
             this.subscribeToUpdates(playerName, data.game_code);
         }
+        this.setLocalStorage();
         ReactGA.event({
             category: 'GAME_ACTIONS',
             action: 'START_GAME',
@@ -135,9 +143,34 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
                 errorCallback(response.error_message);
                 break;
         }
+        this.setLocalStorage();
         ReactGA.event({
             category: 'GAME_ACTIONS',
             action: 'JOIN_GAME',
+            label: response.state
+        });
+    }
+
+    async rejoinGame(savedGame: LocalSavedGame) {
+        let request: RejoinGameRequest = {
+            game_id: savedGame.gameId,
+            game_type: savedGame.gameType,
+            player_name: savedGame.playerName
+
+        };
+        let response: RejoinGameResponse = await SpellBeeService.rejoinGame(request);
+        switch (response.state) {
+            case "success":
+                this.setStateFromServer(response.response.game_state, savedGame.playerName);
+                this.subscribeToUpdates(savedGame.playerName, response.response.game_state.game_code);
+                break;
+            case "failed":
+                console.log("Failed to restore saved game: " + response.error_message);
+                break;
+        }
+        ReactGA.event({
+            category: 'GAME_ACTIONS',
+            action: 'REJOIN_GAME',
             label: response.state
         });
     }
@@ -165,14 +198,13 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
                     }));
                     break;
                 case "player_joined":
-                    this.setState({
-                        errorMessage: `${data.update.player_name} joined`
-                    });
+                    this.setState({errorMessage: `${data.update.player_name} joined`});
                     break;
                 case "player_left":
-                    this.setState({
-                        errorMessage: `${data.update.player_name} left the game`
-                    });
+                    this.setState({errorMessage: `${data.update.player_name} left the game`});
+                    break;
+                case "player_rejoined":
+                    this.setState({errorMessage: `${data.update.player_name} rejoined the game`});
                     break;
             }
         }
@@ -287,6 +319,7 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
         if (this.state.eventSource != null) {
             this.state.eventSource.close();
         }
+        this.clearLocalStorage();
         ReactGA.event({
             category: 'GAME_ACTIONS',
             action: 'END_GAME',
@@ -354,6 +387,19 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
         });
     }
 
+    setLocalStorage() {
+        const saveGame: LocalSavedGame = {
+            gameType: this.state.gameType as GameType,
+            gameId: this.state.gameId,
+            playerName: this.state.playerName
+        }
+        window.localStorage.setItem(LOCAL_STORAGE_SAVED_GAME, JSON.stringify(saveGame));
+    }
+
+    clearLocalStorage() {
+        window.localStorage.removeItem(LOCAL_STORAGE_SAVED_GAME);
+    }
+
     private getShareUrl() {
         return "/game/" + this.state.gameCode;
     }
@@ -417,8 +463,8 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
 
         const leaveModal = this.state.displayLeaveModal
             ? <Modal title="Leave game" content={"Are you sure you want to leave the game?"} buttons={[
-                    <CancelButton onClick={() => { this.setState({ displayLeaveModal: false } )}} />,
-                    <Button onClick={() => { this.setState({ displayLeaveModal: false }); this.endGame()}}  buttonClass={"btn-gold"} buttonText="Leave"/>
+                    <CancelButton key="Cancel" onClick={() => { this.setState({ displayLeaveModal: false } )}} />,
+                    <Button key="Leave" onClick={() => { this.setState({ displayLeaveModal: false }); this.endGame()}}  buttonClass={"btn-gold"} buttonText="Leave"/>
                 ]} />
             : null;
 
@@ -472,5 +518,15 @@ export class HexGrid extends React.Component<HexGridProps, HexGridState> {
                 {leaveModal}
             </div>
         );
+    }
+
+    componentDidMount() {
+        const localStorage = window.localStorage.getItem(LOCAL_STORAGE_SAVED_GAME);
+        if (!localStorage) {
+            return;
+        } else {
+            const saveGame: LocalSavedGame = JSON.parse(localStorage);
+            this.rejoinGame(saveGame);
+        }
     }
 }
