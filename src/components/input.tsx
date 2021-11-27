@@ -33,7 +33,7 @@ export class Input extends React.Component<InputProps, InputState> {
                     <input type="text" value={this.props.wordInProgress}
                            placeholder="Tap letters or type"
                            onChange={this.handleChange} className="uppercase w-5/6 font-bold"/>
-                    <input type="submit" className="btn-gold" value="GO!"/>
+                    <input type="submit" className="btn-gold" value="Enter"/>
                 </form>
                 <div id="errorMessage" className="h-4">&nbsp;{this.props.errorMessage}</div>
             </div>

@@ -9,7 +9,7 @@ export function HexTile(props: HexTileProps) {
     return (
         <li>
             <div className="hexagon" onClick={() => props.tileOnClick(props.letter)}>
-                <p className="text-xl uppercase font-semibold">{props.letter}</p>
+                <p className="text-xl uppercase font-bold">{props.letter}</p>
             </div>
         </li>
     )
